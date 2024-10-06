@@ -1,14 +1,14 @@
 {
-  "name": "@sektek/project-name",
+  "name": "@sektek/utility-belt",
   "version": "1.0.0",
-  "description": "Description",
+  "description": "General utility functions for @sektek projects",
   "author": "Edward Kelly <eddie@sektek.net>",
   "repository": {
     "type": "git",
-    "url": "git@github.com:sektek/project-name.git"
+    "url": "git@github.com:sektek/utility-belt.git"
   },
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "private": false,
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
@@ -31,7 +31,7 @@
     "mocha": "^10.4.0",
     "nyc": "^17.0.0",
     "prettier": "^3.2.5",
-    "typescript": "^5.5.4",
+    "typescript": "^5.6.2",
     "tsx": "^4.17.0"
   }
 }

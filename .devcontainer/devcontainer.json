@@ -1,5 +1,5 @@
 {
-  "name": "Project Name",
+  "name": "Utility Belt",
   "build": {
     "dockerfile": "Dockerfile"
   },
@@ -40,6 +40,6 @@
   },
   "remoteEnv": {
     "HOST_PROJECT_PATH": "${localWorkspaceFolder}",
-    "GH_TOKEN": "${localEnv:GH_TOKEN}",
+    "GH_TOKEN": "${localEnv:GH_TOKEN}"
   }
 }

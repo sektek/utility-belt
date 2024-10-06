@@ -1,9 +1,9 @@
-# Project Name
+# Utility Belt
 
-Description
+General utilities to be used within @sektek projects
 
 ## Installation
 
 ```sh
-npm install @sektek/project-name
+npm install @sektek/utility-belt
 ```
