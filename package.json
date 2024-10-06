@@ -1,0 +1,37 @@
+{
+  "name": "@sektek/project-name",
+  "version": "1.0.0",
+  "description": "Description",
+  "author": "Edward Kelly <eddie@sektek.net>",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:sektek/project-name.git"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "npx tsc -p tsconfig.build.json",
+    "cover": "nyc npm test -s -- --reporter min && nyc report",
+    "lint": "eslint . --cache",
+    "test": "mocha"
+  },
+  "dependencies": {
+    "tslib": "^2.7.0"
+  },
+  "devDependencies": {
+    "@sektek/eslint-plugin": "1.0.1",
+    "@sektek/prettier-config": "1.1.3",
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.10.5",
+    "chai": "^5.1.1",
+    "eslint": "^8.57.0",
+    "mocha": "^10.4.0",
+    "nyc": "^17.0.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.5.4",
+    "tsx": "^4.17.0"
+  }
+}
