@@ -4,7 +4,7 @@ import { isA } from './is-a.js';
 export const getComponent = <T, R extends T & Function>(
   obj: T | null | undefined,
   fnNames: string | string[],
-  fallback?: T | R,
+  fallback?: T,
 ): R => {
   const result = [fnNames]
     .flat()
