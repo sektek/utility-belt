@@ -1,3 +1,4 @@
+export * from './builder-render.js';
 export * from './get-component.js';
 export * from './is-a.js';
 export * from './is-function.js';
