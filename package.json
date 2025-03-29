@@ -13,25 +13,25 @@
   "type": "module",
   "scripts": {
     "build": "npx tsc -p tsconfig.build.json",
-    "cover": "nyc npm test -s -- --reporter min && nyc report",
     "lint": "eslint . --cache",
-    "test": "mocha"
+    "test": "mocha",
+    "test:cover": "c8 npm run test"
   },
   "dependencies": {
-    "tslib": "^2.7.0"
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
     "@sektek/eslint-plugin": "1.0.1",
     "@sektek/prettier-config": "1.1.3",
-    "@types/chai": "^4.3.11",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.10.5",
+    "@types/chai": "^5.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.10.2",
+    "c8": "^10.1.3",
     "chai": "^5.1.1",
     "eslint": "^8.57.0",
     "mocha": "^10.4.0",
-    "nyc": "^17.0.0",
     "prettier": "^3.2.5",
-    "typescript": "^5.6.2",
-    "tsx": "^4.17.0"
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }
