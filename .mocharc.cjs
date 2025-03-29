@@ -1,4 +1,4 @@
 module.exports = {
-  import: 'tsx/esm',
+  loader: 'ts-node/esm',
   spec: ['**/*.spec.ts'],
 };
