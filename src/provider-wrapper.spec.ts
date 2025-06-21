@@ -9,7 +9,9 @@ describe('ProviderWrapper', function () {
       const mockProvider = {
         get: async (arg?: string) => `Hello, ${arg || 'World'}!`,
       };
+
       const providerWrapper = new ProviderWrapper({ provider: mockProvider });
+
       expect(providerWrapper).to.be.instanceOf(ProviderWrapper);
       expect(providerWrapper).to.have.property('get').that.is.a('function');
     });
@@ -18,8 +20,11 @@ describe('ProviderWrapper', function () {
       const mockProvider = {
         get: async (arg?: string) => `Hello, ${arg || 'World'}!`,
       };
+
       const providerWrapper = new ProviderWrapper({ provider: mockProvider });
+
       const result = await providerWrapper.get('Alice');
+
       expect(result).to.equal('Hello, Alice!');
     });
 
@@ -27,7 +32,9 @@ describe('ProviderWrapper', function () {
       const mockProvider = {
         get: async () => undefined,
       };
+
       const providerWrapper = new ProviderWrapper({ provider: mockProvider });
+
       await expect(providerWrapper.get()).to.be.rejectedWith(
         'Provider returned undefined',
       );
@@ -37,12 +44,46 @@ describe('ProviderWrapper', function () {
       const mockProvider: OptionalProvider<string> = {
         get: async () => undefined,
       };
+
       const providerWrapper = new ProviderWrapper({
         provider: mockProvider,
         defaultValue: 'Default Value',
       });
+
       const result = await providerWrapper.get();
+
       expect(result).to.equal('Default Value');
+    });
+
+    it('should handle provider that does not expect an argument', async function () {
+      const mockProvider = {
+        get: async () => 'No argument needed',
+      };
+
+      const providerWrapper = new ProviderWrapper({ provider: mockProvider });
+
+      const result = await providerWrapper.get();
+
+      expect(result).to.equal('No argument needed');
+    });
+
+    it('should allow a default value provider', async function () {
+      const mockProvider: OptionalProvider<string> = {
+        get: async () => undefined,
+      };
+
+      const defaultValueProvider: OptionalProvider<string> = {
+        get: async () => 'Default Value from Provider',
+      };
+
+      const providerWrapper = new ProviderWrapper({
+        provider: mockProvider,
+        defaultValueProvider,
+      });
+
+      const result = await providerWrapper.get();
+
+      expect(result).to.equal('Default Value from Provider');
     });
   });
 
@@ -53,7 +94,9 @@ describe('ProviderWrapper', function () {
       };
 
       const wrappedProvider = wrapOptionalProvider(mockProvider);
+
       const result = await wrappedProvider('Alice');
+
       expect(result).to.equal('Hello, Alice!');
     });
 
@@ -66,7 +109,9 @@ describe('ProviderWrapper', function () {
         mockProvider,
         'Default Value',
       );
+
       const result = await wrappedProvider();
+
       expect(result).to.equal('Default Value');
     });
 
@@ -76,6 +121,7 @@ describe('ProviderWrapper', function () {
       };
 
       const wrappedProvider = wrapOptionalProvider(mockProvider);
+
       await expect(wrappedProvider()).to.be.rejectedWith(
         'Provider returned undefined',
       );

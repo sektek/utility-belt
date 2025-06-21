@@ -2,7 +2,7 @@ import {
   OptionalProviderComponent,
   OptionalProviderFn,
 } from './types/optional-provider.js';
-import { Provider, ProviderFn } from '@sektek/utility-belt';
+import { Provider, ProviderFn } from './types/provider.js';
 import { getComponent } from './get-component.js';
 
 /**
@@ -40,6 +40,7 @@ export type ProviderWrapperOptions<R, T = void> = {
    * If not provided, an error will be thrown if the provider returns undefined.
    */
   defaultValue?: R;
+  defaultValueProvider?: OptionalProviderComponent<R, T>;
 };
 
 /**
@@ -52,11 +53,17 @@ export type ProviderWrapperOptions<R, T = void> = {
  */
 export class ProviderWrapper<R, T = void> implements Provider<R, T> {
   #optionalProvider: OptionalProviderFn<R, T>;
-  #defaultValue?: R;
+  #defaultValueProvider: OptionalProviderFn<R, T>;
 
   constructor(opts: ProviderWrapperOptions<R, T>) {
     this.#optionalProvider = getComponent(opts.provider, 'get');
-    this.#defaultValue = opts.defaultValue;
+    this.#defaultValueProvider = getComponent(
+      opts.defaultValueProvider,
+      'get',
+      {
+        default: () => opts.defaultValue ?? undefined,
+      },
+    );
   }
 
   static wrap<R, T = void>(
@@ -67,10 +74,13 @@ export class ProviderWrapper<R, T = void> implements Provider<R, T> {
   }
 
   async get(arg?: T): Promise<R> {
-    const result = await this.#optionalProvider(arg);
-    if (result === undefined && this.#defaultValue === undefined) {
+    let result = await this.#optionalProvider(arg);
+    result ??= await this.#defaultValueProvider(arg);
+
+    if (result === undefined) {
       throw new Error('Provider returned undefined');
     }
-    return (result ?? this.#defaultValue) as R;
+
+    return result as R;
   }
 }
