@@ -32,7 +32,7 @@ export type GetComponentOptions<T> = {
  * @throws {InvalidComponentError} If the function is not found and no default is provided.
  * @returns {R} - The retrieved function, bound to the original object if applicable.
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 export const getComponent = <T, R extends T & Function>(
   obj: T | null | undefined,
   fnNames: string | string[],
