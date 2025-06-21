@@ -7,6 +7,7 @@ export * from './mutator.js';
 export * from './optional-provider.js';
 export * from './predicate.js';
 export * from './provider.js';
+export * from './repository.js';
 export * from './store.js';
 export * from './sync-provider.js';
 export * from './sync-predicate.js';
