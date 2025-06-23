@@ -1,6 +1,7 @@
 export * from './builder-render.js';
 export * from './execution-strategies/index.js';
 export * from './get-component.js';
+export * from './http/index.js';
 export * from './is-a.js';
 export * from './is-function.js';
 export * from './is-primitive.js';
