@@ -226,6 +226,19 @@ describe('HttpOperator', function () {
       const response = await operator.perform('value');
       expect(response.ok).to.be.true;
     });
+
+    it('should allow a timeout to be specified', async function () {
+      nock('http://test.local').get('/').delay(100).reply(200, 'OK');
+
+      const operator = new HttpOperator<void>({
+        url: 'http://test.local',
+        timeout: 50, // Shorter than the nock delay
+      });
+
+      await expect(operator.perform()).to.be.rejectedWith(
+        'The operation was aborted due to timeout',
+      );
+    });
   });
 
   describe('event emitters', function () {
@@ -246,6 +259,27 @@ describe('HttpOperator', function () {
       expect(arg).to.equal('test');
       expect(request.method).to.equal('GET');
       expect(request.url).to.equal('http://test.local/');
+    });
+
+    it('should emit request:error on fetch errors', async function () {
+      nock('http://test.local').get('/').replyWithError('Network error');
+
+      const operator = new HttpOperator<string>({
+        url: 'http://test.local',
+      });
+
+      const requestErrorSpy = sinon.spy();
+      operator.on('request:error', requestErrorSpy);
+
+      await expect(operator.perform('test')).to.be.rejectedWith(
+        'Network error',
+      );
+
+      expect(requestErrorSpy).to.have.been.calledOnce;
+      const [arg, request, error] = requestErrorSpy.firstCall.args;
+      expect(arg).to.equal('test');
+      expect(request.method).to.equal('GET');
+      expect(error.message).to.equal('Network error');
     });
 
     it('should emit response:received with the response object', async function () {
