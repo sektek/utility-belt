@@ -1,6 +1,5 @@
 import { Provider, ProviderComponent, ProviderFn } from '../../types/index.js';
-
-type HeadersInit = Headers | [string, string][] | Record<string, string>;
+import { HeadersInit } from 'undici-types';
 
 export type HeadersProviderFn<T = unknown> = ProviderFn<HeadersInit, T>;
 
