@@ -1,7 +1,9 @@
+import { RequestInfo } from 'undici-types';
+
 import { Provider, ProviderComponent, ProviderFn } from '../../types/index.js';
 
-export type UrlProviderFn<T> = ProviderFn<string, T>;
+export type UrlProviderFn<T> = ProviderFn<RequestInfo, T>;
 
-export interface UrlProvider<T> extends Provider<string, T> {}
+export interface UrlProvider<T> extends Provider<RequestInfo, T> {}
 
-export type UrlProviderComponent<T> = ProviderComponent<string, T>;
+export type UrlProviderComponent<T> = ProviderComponent<RequestInfo, T>;
