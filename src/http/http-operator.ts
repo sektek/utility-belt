@@ -23,6 +23,7 @@ export type HttpOperatorOptions<T> = {
   bodySerializer?: BodySerializerComponent<T>;
   method?: HttpMethod;
   contentType?: string;
+  timeout?: number;
   url?: string;
 };
 
@@ -41,6 +42,7 @@ export class HttpOperator<T>
   #headersProvider: HeadersProviderFn<T>;
   #method: HttpMethod;
   #urlProvider: UrlProviderFn<T>;
+  #timeout: number;
 
   constructor(opts: HttpOperatorOptions<T>) {
     super();
@@ -77,6 +79,8 @@ export class HttpOperator<T>
         defaultProvider: () => contentTypeHeadersProvider(contentType),
       });
     }
+
+    this.#timeout = opts.timeout ?? 0;
   }
 
   async perform(arg: T): Promise<Response> {
@@ -84,10 +88,18 @@ export class HttpOperator<T>
       method: this.#method,
       headers: await this.#headersProvider(arg),
       body: await this.#bodySerializer(arg),
+      signal:
+        this.#timeout > 0 ? AbortSignal.timeout(this.#timeout) : undefined,
     });
     this.emit('request:created', arg, request);
 
-    const response = await fetch(request);
+    let response: Response;
+    try {
+      response = await fetch(request);
+    } catch (error) {
+      this.emit('request:error', arg, request, error);
+      throw error;
+    }
 
     if (response.status < 200 || response.status >= 300) {
       const error = new Error(`Unexpected status code: ${response.status}`);
