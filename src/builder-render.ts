@@ -1,4 +1,4 @@
-import { BuilderOptions } from './types/builder-options.js';
+import { BuilderOptions } from './types/builder.js';
 import { isFunction } from './is-function.js';
 
 export const builderRender = async <T>(

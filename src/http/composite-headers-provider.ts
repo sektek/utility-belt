@@ -25,6 +25,9 @@ export class CompositeHeadersProvider<T> implements HeadersProvider<T> {
     await Promise.all(
       this.#providers.map(async provider => {
         const providerHeaders = await provider(arg);
+        if (!providerHeaders) {
+          return;
+        }
 
         if (providerHeaders instanceof Headers) {
           providerHeaders.forEach((value, name) => {

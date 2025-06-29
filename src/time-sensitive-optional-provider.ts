@@ -31,6 +31,9 @@ export class TimeSensitiveOptionalProvider<T, K = string> {
   }
 
   async get(key: K): Promise<T | undefined> {
-    return await Promise.race([this.#provider(key), this.#timeoutProvider()]);
+    return await Promise.race([
+      this.#provider(key),
+      this.#timeoutProvider(key),
+    ]);
   }
 }
