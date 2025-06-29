@@ -7,7 +7,7 @@ export type ExecutableFn = (
 export type ExecutionStrategyFn<T extends ExecutableFn> = (
   fns: T[],
   ...args: Parameters<T>
-) => PromiseLike<unknown | void> | unknown | void;
+) => PromiseLike<ReturnType<T>[]>;
 
 export interface ExecutionStrategy<T extends ExecutableFn = ExecutableFn> {
   execute: ExecutionStrategyFn<T>;
