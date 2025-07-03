@@ -3,7 +3,7 @@ import {
   OptionalProviderComponent,
   OptionalProviderFn,
 } from '../../types/index.js';
-import { HeadersInit } from '@types/node';
+import { HeadersInit } from 'undici-types';
 
 export type HeadersProviderFn<T = unknown> = OptionalProviderFn<HeadersInit, T>;
 

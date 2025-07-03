@@ -1,4 +1,4 @@
-import { Component } from '@sektek/utility-belt';
+import { Component } from '../../types/index.js';
 
 export type ResponseDeserializerFn<T> = (
   response: Response,

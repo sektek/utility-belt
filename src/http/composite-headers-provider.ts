@@ -1,10 +1,9 @@
-import { getComponent } from '@sektek/utility-belt';
-
 import {
   HeadersProvider,
   HeadersProviderComponent,
   HeadersProviderFn,
 } from './types/index.js';
+import { getComponent } from '../get-component.js';
 
 export type CompositeHeadersProviderOptions<T> = {
   providers: HeadersProviderComponent<T> | HeadersProviderComponent<T>[];
