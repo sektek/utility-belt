@@ -21,6 +21,5 @@
     "strictPropertyInitialization": true,
     "esModuleInterop": true,
     "importHelpers": true
-  },
-  "exclude": ["node_modules/", "dist/**/*"]
+  }
 }
