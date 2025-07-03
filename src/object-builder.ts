@@ -26,9 +26,17 @@ export class ObjectBuilder<T extends object> implements Builder<T> {
   async create(overrides: Partial<BuilderOptions<T>> = {}): Promise<T> {
     const result: Record<string, unknown> = {};
     await Promise.all(
-      Object.keys({ ...this.#defaults, ...overrides }).map(async key => {
-        result[key] = _.cloneDeep(
-          await this.#renderValue(key, this.#defaults[key], overrides[key]),
+      (
+        Object.keys({ ...this.#defaults, ...overrides }) as Array<
+          keyof BuilderOptions<T>
+        >
+      ).map(async key => {
+        result[key as string] = _.cloneDeep(
+          await this.#renderValue(
+            key as string,
+            this.#defaults[key],
+            overrides[key],
+          ),
         );
       }),
     );
@@ -58,5 +66,9 @@ export class ObjectBuilder<T extends object> implements Builder<T> {
     }
 
     return override ?? value;
+  }
+
+  get creator() {
+    return this.create.bind(this);
   }
 }
