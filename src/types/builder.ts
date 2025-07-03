@@ -9,12 +9,10 @@ import { ProviderFn } from './provider.js';
  * @typeParam T - The type of the object intended to be built.
  */
 export type BuilderOptions<T> = {
-  [P in keyof T]?:
+  [P in keyof T as P extends string ? P : never]?:
     | T[P]
     | ProviderFn<T[P], Partial<BuilderOptions<T[P]>>>
     | BuilderOptions<T[P]>;
-} & {
-  [key: string]: unknown;
 };
 
 /**
