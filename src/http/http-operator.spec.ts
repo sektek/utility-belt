@@ -220,7 +220,7 @@ describe('HttpOperator', function () {
       const operator = new HttpOperator<string>({
         url: 'http://test.local',
         method: 'POST',
-        bodySerializer: body => JSON.stringify({ key: body }),
+        bodySerializer: (body: string) => JSON.stringify({ key: body }),
       });
 
       const response = await operator.perform('value');
