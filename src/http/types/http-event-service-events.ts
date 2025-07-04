@@ -1,4 +1,4 @@
-import { EventEmittingService } from '@sektek/utility-belt';
+import { EventEmittingService } from '../../types/index.js';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
