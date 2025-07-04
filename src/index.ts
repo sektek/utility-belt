@@ -6,6 +6,7 @@ export * from './is-function.js';
 export * from './is-primitive.js';
 export * from './negate-predicate.js';
 export * from './no-op.js';
+export * from './object-builder.js';
 export * from './provider-wrapper.js';
 export * from './time-sensitive-optional-provider.js';
 export * from './time-sensitive-provider.js';
