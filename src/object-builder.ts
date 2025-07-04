@@ -4,16 +4,28 @@ import { Builder, BuilderOptions } from './types/builder.js';
 
 export type ObjectBuilderOptions<T extends object = Record<string, unknown>> = {
   defaults?: Partial<BuilderOptions<T>>;
-  copyKeys?: (keyof T)[];
+  copyKeys?: Array<keyof T>;
 };
 
 export class ObjectBuilder<T extends object> implements Builder<T> {
   #defaults: Partial<BuilderOptions<T>>;
-  #copyKeys: (keyof T)[];
+  #copyKeys: Array<keyof T>;
 
   constructor(opts: ObjectBuilderOptions<T> = {}) {
     this.#defaults = opts.defaults ?? {};
     this.#copyKeys = opts.copyKeys ?? [];
+  }
+
+  from(object: unknown): ObjectBuilder<T> {
+    if (!(object instanceof Object)) {
+      throw new Error(
+        `ObjectBuilder.from() expects an object, received: ${object}`,
+      );
+    }
+    return new ObjectBuilder({
+      defaults: { ...this.#defaults, ..._.pick(object, this.#copyKeys) },
+      copyKeys: this.#copyKeys,
+    });
   }
 
   with(defaults: Partial<BuilderOptions<T>> = {}): ObjectBuilder<T> {

@@ -156,4 +156,27 @@ describe('ObjectBuilder', function () {
       address: { street: '456 Elm St', city: 'Anytown' },
     });
   });
+
+  describe('from()', function () {
+    it('should create a new builder from an existing object', async function () {
+      type TestObject = {
+        name: string;
+        age: number;
+      };
+
+      const originalObject: TestObject = { name: 'John Doe', age: 30 };
+      const builder = new ObjectBuilder<TestObject>({
+        copyKeys: ['name', 'age'],
+      }).from(originalObject);
+      const result = await builder.create();
+      expect(result).to.deep.equal(originalObject);
+    });
+
+    it('should throw an error if the input is not an object', function () {
+      const builder = new ObjectBuilder();
+      expect(() => builder.from('not an object')).to.throw(
+        'ObjectBuilder.from() expects an object, received: not an object',
+      );
+    });
+  });
 });
