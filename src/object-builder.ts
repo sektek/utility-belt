@@ -17,7 +17,7 @@ export class ObjectBuilder<T extends object> implements Builder<T> {
   }
 
   from(object: unknown): ObjectBuilder<T> {
-    if (!(object instanceof Object)) {
+    if (!(typeof object === 'object' && object !== null)) {
       throw new Error(
         `ObjectBuilder.from() expects an object, received: ${object}`,
       );
