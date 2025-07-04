@@ -1,10 +1,5 @@
 import { EventEmitter } from 'events';
 
-import { getComponent } from '../get-component.js';
-
-import { CompositeHeadersProvider } from './composite-headers-provider.js';
-import { contentTypeHeadersProvider } from './content-type-headers-provider.js';
-
 import {
   BodySerializerComponent,
   BodySerializerFn,
@@ -14,6 +9,9 @@ import {
   UrlProviderComponent,
   UrlProviderFn,
 } from './types/index.js';
+import { CompositeHeadersProvider } from './composite-headers-provider.js';
+import { contentTypeHeadersProvider } from './content-type-headers-provider.js';
+import { getComponent } from '../get-component.js';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
