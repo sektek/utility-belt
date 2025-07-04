@@ -1,4 +1,4 @@
-import { Component } from '@sektek/utility-belt';
+import { Component } from '../../types/index.js';
 
 // Having some typing issues with BodyInit and fetch
 // So I'm commenting out the types that are causing conflicts

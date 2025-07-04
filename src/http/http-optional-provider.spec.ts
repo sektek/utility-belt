@@ -163,7 +163,7 @@ describe('HttpOptionalProvider', function () {
 
       const provider = new HttpOptionalProvider<unknown, void>({
         url,
-        responseDeserializer: async response => {
+        responseDeserializer: async (response: Response) => {
           const data = (await response.json()) as Record<string, unknown>;
           return { ...data, customField: 'customValue' };
         },

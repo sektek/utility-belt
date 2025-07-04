@@ -1,10 +1,9 @@
-import { getComponent } from '@sektek/utility-belt';
-
 import {
   HeadersProvider,
   HeadersProviderComponent,
   HeadersProviderFn,
 } from './types/index.js';
+import { getComponent } from '../get-component.js';
 
 export type CompositeHeadersProviderOptions<T> = {
   providers: HeadersProviderComponent<T> | HeadersProviderComponent<T>[];
@@ -25,6 +24,9 @@ export class CompositeHeadersProvider<T> implements HeadersProvider<T> {
     await Promise.all(
       this.#providers.map(async provider => {
         const providerHeaders = await provider(arg);
+        if (!providerHeaders) {
+          return;
+        }
 
         if (providerHeaders instanceof Headers) {
           providerHeaders.forEach((value, name) => {
