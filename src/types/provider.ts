@@ -13,11 +13,14 @@ import { Component } from './component.js';
  * @param T - The type of the argument passed to the provider.
  *            If not provided, the provider does not expect an argument.
  */
-export type ProviderFn<R, T = void> = (arg: T | void) => R | PromiseLike<R>;
+export type ProviderFn<R, T = unknown> = (arg: T) => R | PromiseLike<R>;
 
 /** An interface allowing for a class based provider */
-export interface Provider<R, T = void> {
+export interface Provider<R, T = unknown> {
   get: ProviderFn<R, T>;
 }
 
-export type ProviderComponent<R, T = void> = Component<Provider<R, T>, 'get'>;
+export type ProviderComponent<R, T = unknown> = Component<
+  Provider<R, T>,
+  'get'
+>;
