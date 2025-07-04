@@ -19,7 +19,7 @@ export const wrapOptionalProvider = <R, T = void>(
   defaultValue?: R,
 ): ProviderFn<R, T> => {
   const providerFn: OptionalProviderFn<R, T> = getComponent(provider, 'get');
-  return async (arg?: T): Promise<R> => {
+  return async (arg: T): Promise<R> => {
     const result = await providerFn(arg);
     if (result === undefined && defaultValue === undefined) {
       throw new Error('Provider returned undefined');
@@ -73,7 +73,7 @@ export class ProviderWrapper<R, T = void> implements Provider<R, T> {
     return new ProviderWrapper<R, T>({ provider, defaultValue });
   }
 
-  async get(arg?: T): Promise<R> {
+  async get(arg: T): Promise<R> {
     let result = await this.#optionalProvider(arg);
     result ??= await this.#defaultValueProvider(arg);
 
