@@ -1,4 +1,3 @@
-export * from './builder-render.js';
 export * from './execution-strategies/index.js';
 export * from './get-component.js';
 export * from './http/index.js';
