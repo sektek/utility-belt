@@ -41,4 +41,16 @@ describe('CompositeHeadersProvider', function () {
     expect(headers.get('Content-Type')).to.equal('application/json');
     expect(headers.get('Authorization')).to.equal('Bearer token');
   });
+
+  it('should handle providers that return undefined', async function () {
+    const provider1 = () => ({ 'Content-Type': 'application/json' });
+    const provider2 = () => undefined;
+    const compositeProvider = new CompositeHeadersProvider({
+      providers: [provider1, provider2],
+    });
+
+    const headers = await compositeProvider.get({});
+
+    expect(headers.get('Content-Type')).to.equal('application/json');
+  });
 });
