@@ -115,6 +115,10 @@ export class ObjectBuilder<T extends object> implements Builder<T> {
     return result as T;
   }
 
+  async get(): Promise<T> {
+    return this.create();
+  }
+
   async #renderValue(
     key: string,
     value: unknown,

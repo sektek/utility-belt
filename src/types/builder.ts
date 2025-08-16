@@ -33,4 +33,5 @@ export type BuilderFn<T> = ProviderFn<T, Partial<BuilderOptions<T>>>;
  */
 export interface Builder<T> {
   create: BuilderFn<T>;
+  get: ProviderFn<T>;
 }
