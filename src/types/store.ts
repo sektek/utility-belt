@@ -1,3 +1,4 @@
+import { IterableProviderFn } from './iterable-provider.js';
 import { MutatorFn } from './mutator.js';
 import { OptionalProviderFn } from './optional-provider.js';
 import { PredicateFn } from './predicate.js';
@@ -19,6 +20,18 @@ export interface Store<T, K = string> {
    *          or undefined if the key does not exist in the store.
    */
   get: OptionalProviderFn<T, K>;
+
+  /**
+   * Retrieves all keys from the store.
+   * @returns A promise that resolves to an iterable of all keys in the store.
+   */
+  keys: IterableProviderFn<K>;
+
+  /**
+   * Retrieves all values from the store.
+   * @returns A promise that resolves to an iterable of all values in the store.
+   */
+  values: IterableProviderFn<T>;
 
   /**
    * Sets a value in the store for a given key.
