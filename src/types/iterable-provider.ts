@@ -7,9 +7,9 @@ import { Component } from './component.js';
  * @template T The type of argument accepted by the provider function.
  *             If not provided, the provider does not expect an argument.
  */
-export type IterableProviderFn<R, T = unknown> = (
+export type IterableProviderFn<R, T = void> = (
   arg: T,
-) => Iterable<R> | AsyncIterable<R>;
+) => Iterable<R> | AsyncIterable<R> | PromiseLike<Iterable<R>>;
 
 /**
  * An interface allowing for a class based iterable provider.
@@ -20,11 +20,11 @@ export type IterableProviderFn<R, T = unknown> = (
  * @template T The type of argument accepted by the provider function.
  *             If not provided, the provider does not expect an argument.
  */
-export interface IterableProvider<R, T = unknown> {
+export interface IterableProvider<R, T = void> {
   values: IterableProviderFn<R, T>;
 }
 
-export type IterableProviderComponent<R, T = unknown> = Component<
+export type IterableProviderComponent<R, T = void> = Component<
   IterableProvider<R, T>,
   'values'
 >;

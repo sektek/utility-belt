@@ -32,7 +32,7 @@ export interface OptionalProvider<R, T = void>
  * @param T - The type of the argument passed to the provider.
  *            If not provided, the provider does not expect an argument.
  */
-export type OptionalProviderComponent<R, T> = Component<
+export type OptionalProviderComponent<R, T = void> = Component<
   OptionalProvider<R, T>,
   'get'
 >;

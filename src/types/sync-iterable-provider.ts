@@ -7,7 +7,7 @@ import { Component } from '../types/component.js';
  * @template T The type of argument accepted by the provider function.
  *             If not provided, the provider does not expect an argument.
  */
-export type SyncIterableProviderFn<R, T = unknown> = (arg: T) => Iterable<R>;
+export type SyncIterableProviderFn<R, T = void> = (arg: T) => Iterable<R>;
 
 /**
  * An interface allowing for a class based synchronous iterable provider.
@@ -18,11 +18,11 @@ export type SyncIterableProviderFn<R, T = unknown> = (arg: T) => Iterable<R>;
  * @template T The type of argument accepted by the provider function.
  *             If not provided, the provider does not expect an argument.
  */
-export interface SyncIterableProvider<R, T = unknown> {
+export interface SyncIterableProvider<R, T = void> {
   values: SyncIterableProviderFn<R, T>;
 }
 
-export type SyncIterableProviderComponent<R, T = unknown> = Component<
+export type SyncIterableProviderComponent<R, T = void> = Component<
   SyncIterableProvider<R, T>,
   'values'
 >;
