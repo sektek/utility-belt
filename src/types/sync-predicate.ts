@@ -12,11 +12,14 @@ import { Component } from './component.js';
  *
  * @see {@link Predicate}
  */
-export type SyncPredicateFn<T> = (value: T) => boolean;
+export type SyncPredicateFn<T = void> = (value: T) => boolean;
 
 /** An interface allowing for a class based predicate */
-export interface SyncPredicate<T> {
+export interface SyncPredicate<T = void> {
   test: SyncPredicateFn<T>;
 }
 
-export type SyncPredicateComponent<T> = Component<SyncPredicate<T>, 'test'>;
+export type SyncPredicateComponent<T = void> = Component<
+  SyncPredicate<T>,
+  'test'
+>;

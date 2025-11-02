@@ -5,11 +5,18 @@ import {
 } from './types/index.js';
 import { getComponent } from '../get-component.js';
 
-export type CompositeHeadersProviderOptions<T> = {
+/** Options for the CompositeHeadersProvider constructor. */
+export type CompositeHeadersProviderOptions<T = void> = {
+  /** The headers providers to compose. */
   providers: HeadersProviderComponent<T> | HeadersProviderComponent<T>[];
 };
 
-export class CompositeHeadersProvider<T> implements HeadersProvider<T> {
+/**
+ * A HeadersProvider that composes multiple HeadersProviders into one.
+ *
+ * @template T The type of the argument passed to the headers providers.
+ */
+export class CompositeHeadersProvider<T = void> implements HeadersProvider<T> {
   #providers: HeadersProviderFn<T>[];
 
   constructor(opts: CompositeHeadersProviderOptions<T>) {

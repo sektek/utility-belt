@@ -8,11 +8,13 @@ import { Component } from './component.js';
  * const isEven: Predicate<number> = (value) => value % 2 === 0;
  * ```
  */
-export type PredicateFn<T> = (value: T) => boolean | PromiseLike<boolean>;
+export type PredicateFn<T = void> = (
+  value: T,
+) => boolean | PromiseLike<boolean>;
 
 /** An interface allowing for a class based predicate */
-export interface Predicate<T> {
+export interface Predicate<T = void> {
   test: PredicateFn<T>;
 }
 
-export type PredicateComponent<T> = Component<Predicate<T>, 'test'>;
+export type PredicateComponent<T = void> = Component<Predicate<T>, 'test'>;

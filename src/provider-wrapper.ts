@@ -40,6 +40,7 @@ export type ProviderWrapperOptions<R, T = void> = {
    * If not provided, an error will be thrown if the provider returns undefined.
    */
   defaultValue?: R;
+  /** An optional default value provider component to get the default value from. */
   defaultValueProvider?: OptionalProviderComponent<R, T>;
 };
 

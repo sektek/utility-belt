@@ -7,12 +7,14 @@ import {
 
 import { HttpOperator, HttpOperatorOptions } from './http-operator.js';
 
-export type HttpProviderOptions<R, T> = HttpOperatorOptions<T> & {
+/** Options for the HttpProvider constructor. */
+export type HttpProviderOptions<R, T = void> = HttpOperatorOptions<T> & {
+  /** Deserializer for transforming HTTP responses into the desired type R. */
   responseDeserializer?: ResponseDeserializerComponent<R>;
   httpOperator?: HttpOperator<T>;
 };
 
-export class HttpProvider<R, T = unknown> {
+export class HttpProvider<R, T = void> {
   #httpOperator: HttpOperator<T>;
   #responseDeserializer: ResponseDeserializerFn<R>;
 

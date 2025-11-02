@@ -4,7 +4,7 @@ export type ExecutableFn = (
   ...args: unknown[]
 ) => Promise<void | unknown> | unknown | void;
 
-export type ExecutionStrategyFn<T extends ExecutableFn> = (
+export type ExecutionStrategyFn<T extends ExecutableFn = ExecutableFn> = (
   fns: T[],
   ...args: Parameters<T>
 ) => PromiseLike<unknown | void> | unknown | void;

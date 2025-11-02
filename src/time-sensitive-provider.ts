@@ -1,8 +1,16 @@
 import type { ProviderComponent, ProviderFn } from './types/provider.js';
 import { getComponent } from './get-component.js';
 
-export type TimeSensitiveProviderOptions<T, K = string> = {
+/**
+ * Options for the TimeSensitiveProvider constructor.
+ * @template T - The type of the value returned by the provider.
+ * @template K - The type of the key used to access the provider.
+ *               If not provided, the provider does not expect a key.
+ */
+export type TimeSensitiveProviderOptions<T, K = void> = {
+  /** The provider to wrap with timeout functionality. */
   provider: ProviderComponent<T, K>;
+  /** The timeout duration in milliseconds. */
   timeout: number;
 };
 
@@ -14,7 +22,7 @@ export type TimeSensitiveProviderOptions<T, K = string> = {
  * @template K - The type of the key used to access the provider.
  *               If not provided, the provider does not expect a key.
  */
-export class TimeSensitiveProvider<T, K = string> {
+export class TimeSensitiveProvider<T, K = void> {
   #provider: ProviderFn<T, K>;
   #timeout: number;
   #timeoutProvider: ProviderFn<T, K>;

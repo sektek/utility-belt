@@ -7,7 +7,7 @@ import { isA } from './is-a.js';
 
 export type GetComponentOptions<T> = {
   default?: T;
-  defaultProvider?: SyncProviderComponent<T, void>;
+  defaultProvider?: SyncProviderComponent<T>;
   errorMessage?: string;
   name?: string;
 };
@@ -55,7 +55,7 @@ export const getComponent = <T, R extends T & Function>(
     opts.errorMessage || `Invalid ${opts.name || 'component'}`;
 
   if (opts.defaultProvider) {
-    const providerFn: SyncProviderFn<T, void> = getComponent(
+    const providerFn: SyncProviderFn<T> = getComponent(
       opts.defaultProvider,
       'get',
     );

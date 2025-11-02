@@ -13,26 +13,46 @@ import { CompositeHeadersProvider } from './composite-headers-provider.js';
 import { contentTypeHeadersProvider } from './content-type-headers-provider.js';
 import { getComponent } from '../get-component.js';
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+type HttpMethod = 'GET' | 'DELETE' | 'PATCH' | 'POST' | 'PUT';
 
-export type HttpOperatorOptions<T> = {
+/** Options for the HttpOperator constructor. */
+export type HttpOperatorOptions<T = void> = {
+  /** Provider for HTTP headers. */
   headersProvider?: HeadersProviderComponent<T>;
+  /**
+   * Provider for the URL to send the HTTP request to. If not provided, a
+   * static URL must be provided with the `url` option.
+   */
   urlProvider?: UrlProviderComponent<T>;
+  /**
+   * Serializer for the HTTP request body. If not provided, a default serializer
+   * will be used based on the HTTP method.
+   */
   bodySerializer?: BodySerializerComponent<T>;
+  /** HTTP method to use for the request. Default is 'GET'. */
   method?: HttpMethod;
+  /** Content-Type header value. Default is 'application/json'. */
   contentType?: string;
+  /** Timeout for the HTTP request in milliseconds. */
   timeout?: number;
+  /**
+   * Static URL to send the HTTP request to. Ignored if `urlProvider` is provided.
+   */
   url?: string;
 };
 
 const METHOD_DEFAULT_BODY_SERIALIZER: Record<HttpMethod, BodySerializerFn> = {
+  DELETE: () => undefined,
   GET: () => undefined,
+  PATCH: JSON.stringify,
   POST: JSON.stringify,
   PUT: JSON.stringify,
-  DELETE: () => undefined,
 };
 
-export class HttpOperator<T>
+/**
+ * HttpOperator is a class that performs HTTP requests using the Fetch API.
+ */
+export class HttpOperator<T = void>
   extends EventEmitter
   implements HttpEventService<T>
 {
