@@ -1,3 +1,4 @@
+export * from './default-provider.js';
 export * from './execution-strategies/index.js';
 export * from './get-component.js';
 export * from './http/index.js';
@@ -7,7 +8,6 @@ export * from './is-primitive.js';
 export * from './negate-predicate.js';
 export * from './no-op.js';
 export * from './object-builder.js';
-export * from './provider-wrapper.js';
 export * from './time-sensitive-optional-provider.js';
 export * from './time-sensitive-provider.js';
 export * from './types/index.js';
