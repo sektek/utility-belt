@@ -81,6 +81,32 @@ describe('DefaultProvider', function () {
 
       expect(result).to.equal('Default Value from Provider');
     });
+
+    it('should throw an error if no default value could be provided', async function () {
+      const mockProvider = () => undefined;
+
+      const provider = new DefaultProvider<string>({
+        provider: mockProvider,
+        defaultValueProvider: () => undefined as unknown as string,
+      });
+
+      await expect(provider.get()).to.be.rejectedWith(
+        'No default value could be provided.',
+      );
+    });
+
+    it('should allow falsy default values', async function () {
+      const mockProvider = () => undefined;
+
+      const provider = new DefaultProvider<number>({
+        provider: mockProvider,
+        defaultValue: 0,
+      });
+
+      const result = await provider.get();
+
+      expect(result).to.equal(0);
+    });
   });
 
   describe('wrap', function () {
@@ -96,6 +122,14 @@ describe('DefaultProvider', function () {
 
       expect(wrappedProvider).to.be.instanceOf(DefaultProvider);
       expect(result).to.equal('Hello, Alice!');
+    });
+
+    it('should throw an error if defaultValue is undefined', function () {
+      const mockProvider = () => undefined;
+
+      expect(() =>
+        DefaultProvider.wrap(mockProvider, undefined as unknown as string),
+      ).to.throw('defaultValue must be provided and cannot be undefined.');
     });
   });
 });
