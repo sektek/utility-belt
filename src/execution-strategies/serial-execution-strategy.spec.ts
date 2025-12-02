@@ -1,6 +1,6 @@
 import { expect, use } from 'chai';
+import { fake, spy } from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-import { fake } from 'sinon';
 import sinonChai from 'sinon-chai';
 
 import { serialExecutionStrategy } from './serial-execution-strategy.js';
@@ -40,5 +40,37 @@ describe('SerialStrategy', function () {
     expect(handler1).to.have.been.calledOnceWith(obj);
     expect(handler2).to.have.been.calledOnce;
     expect(handler3).not.to.have.been.called;
+  });
+
+  it('should handle async iterable of functions', async function () {
+    const obj = { value: 1 };
+    let value = 0;
+    const handler1 = async (obj: { value: number }) => {
+      value = obj.value;
+    };
+    const handler2 = async () => {
+      expect(value).to.equal(1);
+      value = 2;
+    };
+    const handler3 = async () => {
+      expect(value).to.equal(2);
+      value = 3;
+    };
+
+    const handler1Spy = spy(handler1);
+    const handler2Spy = spy(handler2);
+    const handler3Spy = spy(handler3);
+
+    async function* generateHandlers() {
+      yield handler1Spy;
+      yield handler2Spy;
+      yield handler3Spy;
+    }
+
+    await serialExecutionStrategy(generateHandlers(), obj);
+
+    expect(handler1Spy).to.have.been.calledOnceWith(obj);
+    expect(handler2Spy).to.have.been.calledOnce;
+    expect(handler3Spy).to.have.been.calledOnce;
   });
 });
