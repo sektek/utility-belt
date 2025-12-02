@@ -23,11 +23,14 @@ export class RoundRobinStrategy<T extends ExecutableFn = ExecutableFn> {
     let executables: T[];
     if (Array.isArray(fns)) {
       executables = fns;
-    } else {
+    } else if (Symbol.asyncIterator in Object(fns)) {
       executables = [];
       for await (const fn of fns) {
         executables.push(fn);
       }
+    } else {
+      // Synchronous iterable - use Array.from
+      executables = Array.from(fns as Iterable<T>);
     }
     if (executables.length === 0) {
       return;
