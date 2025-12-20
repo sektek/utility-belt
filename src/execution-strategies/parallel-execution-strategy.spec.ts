@@ -18,6 +18,15 @@ describe('ParallelStrategy', function () {
     parallelExecutionStrategy = new ParallelExecutionStrategy();
   });
 
+  it('should throw an error for negative maxConcurrency', function () {
+    expect(
+      () =>
+        new ParallelExecutionStrategy({
+          maxConcurrency: -1,
+        }),
+    ).to.throw('maxConcurrency must be a positive number.');
+  });
+
   it('should execute all handlers in parallel', async function () {
     const obj = { foo: 'bar' };
     const handler1 = fake();
@@ -35,9 +44,11 @@ describe('ParallelStrategy', function () {
     const handler1 = fake.returns(Promise.resolve());
     const handler2 = fake.returns(Promise.reject(error));
 
-    await expect(
+    const err = await expect(
       parallelExecutionStrategy.execute([handler1, handler2], obj),
-    ).to.be.eventually.rejectedWith(error);
+    ).to.be.eventually.rejectedWith(ExecutionError);
+    expect(err.errors).to.have.length(1);
+    expect(err.errors[0]).to.equal(error);
     expect(handler1).to.have.been.calledOnceWith(obj);
   });
 
