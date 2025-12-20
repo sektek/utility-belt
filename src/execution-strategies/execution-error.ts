@@ -4,7 +4,6 @@
  */
 export class ExecutionError extends AggregateError {
   /**
-   * @param message - The error message.
    * @param cause - The cause of the error. Can be a single Error or an array of Errors.
    */
   constructor(cause?: Error | Error[]) {

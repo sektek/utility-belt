@@ -54,4 +54,22 @@ describe('RoundRobinStrategy', function () {
     expect(handler2.calledOnceWith(obj)).to.be.false;
     expect(handler3.calledOnceWith(obj)).to.be.false;
   });
+
+  it('should handle errors from async iterable handlers', async function () {
+    const error = new Error('Handler failed');
+    const handler1 = fake();
+    const handler2 = fake.returns(Promise.reject(error));
+
+    async function* generateHandlers() {
+      yield handler1;
+      yield handler2;
+    }
+
+    const strategy = new RoundRobinStrategy();
+    await strategy.execute(generateHandlers(), {});
+
+    await expect(
+      strategy.execute(generateHandlers(), {}),
+    ).to.be.eventually.rejectedWith(error);
+  });
 });
