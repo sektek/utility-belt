@@ -5,32 +5,32 @@
  * preventing them from being added in the future.
  */
 export class ExecutionSet {
-  executing: Set<Promise<unknown>> = new Set();
-  deletedExecuting: Set<Promise<unknown>> = new Set();
+  #executing: Set<Promise<unknown>> = new Set();
+  #deletedExecuting: Set<Promise<unknown>> = new Set();
 
   add(promise: Promise<unknown>) {
-    if (this.deletedExecuting.has(promise)) {
-      this.deletedExecuting.delete(promise);
+    if (this.#deletedExecuting.has(promise)) {
+      this.#deletedExecuting.delete(promise);
       return;
     }
 
-    this.executing.add(promise);
+    this.#executing.add(promise);
   }
 
   delete(promise: Promise<unknown>) {
-    if (this.executing.has(promise)) {
-      this.executing.delete(promise);
+    if (this.#executing.has(promise)) {
+      this.#executing.delete(promise);
       return;
     }
 
-    this.deletedExecuting.add(promise);
+    this.#deletedExecuting.add(promise);
   }
 
   get size(): number {
-    return this.executing.size;
+    return this.#executing.size;
   }
 
   [Symbol.iterator]() {
-    return this.executing[Symbol.iterator]();
+    return this.#executing[Symbol.iterator]();
   }
 }
