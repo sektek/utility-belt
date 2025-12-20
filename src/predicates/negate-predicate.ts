@@ -1,5 +1,5 @@
-import { Predicate, PredicateComponent, PredicateFn } from './types/index.js';
-import { getComponent } from './get-component.js';
+import { Predicate, PredicateComponent, PredicateFn } from '../types/index.js';
+import { getComponent } from '../get-component.js';
 
 /**
  * Negates a predicate function or component.
