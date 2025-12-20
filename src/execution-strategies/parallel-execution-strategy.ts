@@ -7,7 +7,7 @@ const DEFAULT_MAX_CONCURRENCY = Infinity;
 export type ParallelExecutionStrategyOptions = {
   /**
    * The maximum number of concurrent executions. If provided, this must be a
-   * non-negative number. If not specified or set to 0 it will default to no
+   * positive number. If not specified or set to 0 it will default to no
    * limit.
    */
   maxConcurrency?: number;
@@ -66,10 +66,7 @@ export class ParallelExecutionStrategy<T extends ExecutableFn = ExecutableFn>
     if (opts.maxConcurrency !== undefined && opts.maxConcurrency < 0) {
       throw new Error('maxConcurrency must be a positive number.');
     }
-    this.#maxConcurrency = opts.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY;
-    if (this.#maxConcurrency <= 0) {
-      this.#maxConcurrency = DEFAULT_MAX_CONCURRENCY;
-    }
+    this.#maxConcurrency = opts.maxConcurrency || DEFAULT_MAX_CONCURRENCY;
   }
 
   /**
