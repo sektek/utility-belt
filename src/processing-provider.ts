@@ -24,8 +24,8 @@ export class ProcessingProvider<I, O = I, T = void> {
     this.#processor = getComponent(opts.processor, 'process');
   }
 
-  async provide(context: T): Promise<O> {
+  async get(context: T): Promise<O> {
     const input = await this.#provider(context);
-    return this.#processor(input);
+    return await this.#processor(input);
   }
 }

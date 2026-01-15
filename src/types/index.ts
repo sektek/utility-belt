@@ -9,6 +9,7 @@ export * from './iterable-provider.js';
 export * from './mutator.js';
 export * from './optional-provider.js';
 export * from './predicate.js';
+export * from './processor.js';
 export * from './provider.js';
 export * from './repository.js';
 export * from './service.js';
