@@ -1,6 +1,7 @@
 export * from './builder.js';
 export * from './collection.js';
 export * from './collector.js';
+export * from './command.js';
 export * from './component.js';
 export * from './event-emitting-service.js';
 export * from './execution-strategy.js';
@@ -11,6 +12,9 @@ export * from './predicate.js';
 export * from './processor.js';
 export * from './provider.js';
 export * from './repository.js';
+export * from './service.js';
+export * from './startable.js';
+export * from './stoppable.js';
 export * from './store.js';
 export * from './sync-iterable-provider.js';
 export * from './sync-provider.js';
