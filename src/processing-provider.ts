@@ -26,6 +26,6 @@ export class ProcessingProvider<I, O = I, T = void> {
 
   async provide(context: T): Promise<O> {
     const input = await this.#provider(context);
-    return this.#processor(input);
+    return await this.#processor(input);
   }
 }
