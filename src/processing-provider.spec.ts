@@ -12,7 +12,7 @@ describe('ProcessingProvider', function () {
       processor: (input: number) => input * 2,
     });
 
-    await expect(provider.provide()).to.eventually.equal(10);
+    await expect(provider.get()).to.eventually.equal(10);
   });
 
   it('should handle async provider and processor', async function () {
@@ -25,7 +25,7 @@ describe('ProcessingProvider', function () {
       },
     });
 
-    await expect(provider.provide()).to.eventually.equal(15);
+    await expect(provider.get()).to.eventually.equal(15);
   });
 
   it('should pass context to the provider', async function () {
@@ -38,6 +38,6 @@ describe('ProcessingProvider', function () {
       },
     );
 
-    await expect(provider.provide({ factor: 2 })).to.eventually.equal(25);
+    await expect(provider.get({ factor: 2 })).to.eventually.equal(25);
   });
 });
