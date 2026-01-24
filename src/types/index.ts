@@ -3,6 +3,7 @@ export * from './collection.js';
 export * from './collector.js';
 export * from './command.js';
 export * from './component.js';
+export * from './error-handler.js';
 export * from './event-emitting-service.js';
 export * from './execution-strategy.js';
 export * from './iterable-provider.js';
