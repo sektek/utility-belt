@@ -159,8 +159,6 @@ describe('HttpOperator', function () {
       expect(response.ok).to.be.true;
     });
 
-    // TODO: This test is not demonstrating the expected behavior.
-    // The default content-type header is still being sent with the request,
     it('should not use default content-type with headersProvider', async function () {
       nock(baseUrl, {
         reqheaders: { 'X-Custom-Header': 'CustomValue' },
