@@ -4,6 +4,9 @@ import { ExecutableFn } from '../types/index.js';
  * An execution strategy that runs functions serially, awaiting each one
  * before proceeding to the next. If any function throws an error,
  * execution stops and the error is propagated.
+ *
+ * @param fns - An iterable or async iterable of functions to execute.
+ * @param args - Arguments to pass to each function.
  */
 export const serialExecutionStrategy = async <
   T extends ExecutableFn = ExecutableFn,

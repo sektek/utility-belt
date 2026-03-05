@@ -3,6 +3,7 @@ import { getComponent } from './get-component.js';
 
 /**
  * Options for the TimeSensitiveProvider constructor.
+ *
  * @template T - The type of the value returned by the provider.
  * @template K - The type of the key used to access the provider.
  *               If not provided, the provider does not expect a key.
@@ -18,6 +19,7 @@ export type TimeSensitiveProviderOptions<T, K = void> = {
  * A wrapper for a provider that adds a timeout feature.
  * If the provider does not return a value within the specified timeout,
  * it will throw an error.
+ *
  * @template T - The type of the value returned by the provider.
  * @template K - The type of the key used to access the provider.
  *               If not provided, the provider does not expect a key.

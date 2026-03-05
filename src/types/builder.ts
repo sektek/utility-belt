@@ -6,7 +6,7 @@ import { ProviderFn } from './provider.js';
  * each key to be either a value of type T[P] or a provider function
  * that returns a value of type T.
  *
- * @typeParam T - The type of the object intended to be built.
+ * @template T - The type of the object intended to be built.
  */
 export type BuilderOptions<T> = {
   [P in keyof T as P extends string ? P : never]?:
@@ -20,7 +20,7 @@ export type BuilderOptions<T> = {
  * using the provided options. It can be used to build complex objects by
  * combining static values and provider functions.
  *
- * @typeParam T - The type of the object to be built.
+ * @template T - The type of the object to be built.
  */
 export type BuilderFn<T> = ProviderFn<T, Partial<BuilderOptions<T>>>;
 
@@ -29,7 +29,7 @@ export type BuilderFn<T> = ProviderFn<T, Partial<BuilderOptions<T>>>;
  * using a BuilderFn. It allows for the creation of objects with dynamic
  * properties and values, which can be either static or provided by functions.
  *
- * @typeParam T - The type of the object to be built.
+ * @template T - The type of the object to be built.
  */
 export interface Builder<T> {
   create: BuilderFn<T>;

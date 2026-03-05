@@ -1,7 +1,10 @@
-import { expect } from 'chai';
+import { expect, use } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import { fake } from 'sinon';
 
 import { RoundRobinStrategy } from './round-robin-strategy.js';
+
+use(chaiAsPromised);
 
 describe('RoundRobinStrategy', function () {
   it('should execute all handlers in round-robin', async function () {
@@ -34,7 +37,7 @@ describe('RoundRobinStrategy', function () {
 
   it('should handle empty executables', async function () {
     const strategy = new RoundRobinStrategy();
-    await strategy.execute([]);
+    await expect(strategy.execute([], {})).to.be.fulfilled;
   });
 
   it('should handle async iterable of functions', async function () {

@@ -8,12 +8,13 @@
  * within class constructor options allowing for a more flexible interface and should
  * be combined with the `getComponent` utility for extracting the component.
  *
- * @typeParam T - The type from which to extract the method.
- * @typeParam K - The key of the method to extract from T.
+ * @template T - The type from which to extract the method.
+ * @template K - The key of the method to extract from T.
  *                It must be a key of T that corresponds to a function.
  * @returns A type that is either T or a function matching the signature of T[K].
  *          If T is never, it returns never.
  *          If K is not a key of T or T[K] is not a function, it returns never.
+ *
  * @example
  * // Example usage:
  * interface MyComponent {

@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import nock from 'nock';
@@ -8,8 +10,16 @@ import { HttpOptionalProvider } from './http-optional-provider.js';
 use(chaiAsPromised);
 
 describe('HttpOptionalProvider', function () {
+  let baseUrl: string;
+  let url: string;
+
   before(function () {
     nock.disableNetConnect();
+  });
+
+  beforeEach(function () {
+    baseUrl = `https://test.local/${randomUUID()}`;
+    url = `${baseUrl}/`;
   });
 
   afterEach(function () {
@@ -28,7 +38,6 @@ describe('HttpOptionalProvider', function () {
     });
 
     it('should use the provided url', async function () {
-      const url = 'http://test.local';
       nock(url).get('/').reply(200, { success: true });
 
       const provider = new HttpOptionalProvider<unknown, void>({
@@ -40,7 +49,6 @@ describe('HttpOptionalProvider', function () {
     });
 
     it('should return undefined if the request fails', async function () {
-      const url = 'http://test.local';
       nock(url).get('/').reply(500, 'Internal Server Error');
 
       const provider = new HttpOptionalProvider<unknown, void>({
@@ -52,7 +60,6 @@ describe('HttpOptionalProvider', function () {
     });
 
     it('should handle errors in response deserialization', async function () {
-      const url = 'http://test.local';
       nock(url).get('/').reply(200, 'Invalid JSON');
 
       const provider = new HttpOptionalProvider<unknown, void>({
@@ -70,7 +77,6 @@ describe('HttpOptionalProvider', function () {
 
   describe('HttpOperator customization', function () {
     it('should use the provided urlProvider', async function () {
-      const url = 'http://test.local';
       nock(url).get('/').reply(200, { success: true });
 
       const provider = new HttpOptionalProvider<unknown, void>({
@@ -82,7 +88,6 @@ describe('HttpOptionalProvider', function () {
     });
 
     it('should use the provided method', async function () {
-      const url = 'http://test.local';
       nock(url).post('/').reply(200, { success: true });
 
       const provider = new HttpOptionalProvider<unknown, void>({
@@ -95,7 +100,6 @@ describe('HttpOptionalProvider', function () {
     });
 
     it('should use the provided headersProvider', async function () {
-      const url = 'http://test.local';
       nock(url, {
         reqheaders: {
           'X-Custom-Header': 'my-value',
@@ -116,7 +120,6 @@ describe('HttpOptionalProvider', function () {
     });
 
     it('should use the default content type if not provided', async function () {
-      const url = 'http://test.local';
       nock(url, {
         reqheaders: {
           'Content-Type': 'application/json',
@@ -134,7 +137,6 @@ describe('HttpOptionalProvider', function () {
     });
 
     it('should allow a custom content type', async function () {
-      const url = 'http://test.local';
       nock(url, {
         reqheaders: {
           'Content-Type': 'application/xml',
@@ -158,7 +160,6 @@ describe('HttpOptionalProvider', function () {
 
   describe('OptionalProvider customization', function () {
     it('should allow customization of the response deserializer', async function () {
-      const url = 'http://test.local';
       nock(url).get('/').reply(200, { success: true });
 
       const provider = new HttpOptionalProvider<unknown, void>({
@@ -177,7 +178,6 @@ describe('HttpOptionalProvider', function () {
     });
 
     it('should use the provided httpOperator', async function () {
-      const url = 'http://test.local';
       nock(url).get('/').reply(200, { success: true });
 
       const customOperator = new HttpOperator({

@@ -7,6 +7,7 @@ import { getComponent } from '../get-component.js';
 
 /**
  * Options for creating an AllPredicate.
+ *
  * @template T - The type of the value to test.
  */
 export type AllPredicateOptions<T> = {
@@ -17,8 +18,9 @@ export type AllPredicateOptions<T> = {
 /**
  * A composite predicate that returns true only if all
  * constituent predicates return true.
+ *
  * @template T - The type of the value to test. Defaults to void,
- * allowing for predicates that do not require an input value.
+ *   allowing for predicates that do not require an input value.
  */
 export class AllPredicate<T = void> implements Predicate<T> {
   #predicates: PredicateFn<T>[];
@@ -29,14 +31,23 @@ export class AllPredicate<T = void> implements Predicate<T> {
 
   /**
    * Wraps an array of predicate components into an AllPredicate.
+   *
    * @template T - The type of the value to test.
    * @param predicates - The predicate components to combine.
+   *
    * @returns An instance of AllPredicate.
    */
   static wrap<T>(...predicates: PredicateComponent<T>[]): AllPredicate<T> {
     return new AllPredicate<T>({ predicates: [predicates].flat() });
   }
 
+  /**
+   * Tests the value against all constituent predicates.
+   *
+   * @param value - The value to test.
+   *
+   * @returns A promise that resolves to the boolean result of the test.
+   */
   async test(value: T): Promise<boolean> {
     for (const predicateFn of this.#predicates) {
       const result = await predicateFn(value);
