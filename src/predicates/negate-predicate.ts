@@ -1,19 +1,6 @@
 import { Predicate, PredicateComponent, PredicateFn } from '../types/index.js';
 import { getComponent } from '../get-component.js';
 
-/**
- * Negates a predicate function or component.
- *
- * @template T - The type of the value to test.
- * @param predicate A predicate function or component to negate.
- *
- * @returns A new predicate function that returns the negation of the original
- *   predicate.
- */
-export const negate = <T>(predicate: PredicateComponent<T>): PredicateFn<T> => {
-  const predicateFn: PredicateFn<T> = getComponent(predicate, 'test');
-  return (value: T): boolean => !predicateFn(value);
-};
 
 /**
  * Options for creating a NegatedPredicate.
@@ -52,10 +39,10 @@ export class NegatedPredicate<T> implements Predicate<T> {
    * Tests the value against the negated predicate.
    *
    * @param value - The value to test.
-   * @returns A boolean or a promise that resolves to a boolean result of the
+   * @returns A promise that resolves to a boolean result of the
    *    negated predicate test.
    */
-  test(value: T): boolean | PromiseLike<boolean> {
-    return !this.#predicateFn(value);
+  async test(value: T): Promise<boolean> {
+    return !(await this.#predicateFn(value));
   }
 }
