@@ -6,8 +6,9 @@ import { Component } from './component.js';
  *
  * This is intended for situations where only synchronous evaluation is possible,
  * such as in synchronous loops or within constructors.
- * @typeParam R - The type of the value returned by the provider.
- * @typeParam T - The type of the argument passed to the provider.
+ *
+ * @template R - The type of the value returned by the provider.
+ * @template T - The type of the argument passed to the provider.
  *                If not provided, the provider does not expect an argument.
  * @returns R - The return type is the value provided by the provider.
  */

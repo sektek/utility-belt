@@ -9,7 +9,10 @@ import { Component } from './component.js';
  */
 export type IterableProviderFn<R, T = void> = (
   arg: T,
-) => Iterable<R> | AsyncIterable<R> | PromiseLike<Iterable<R>>;
+) =>
+  | Iterable<R>
+  | AsyncIterable<R>
+  | PromiseLike<Iterable<R> | AsyncIterable<R>>;
 
 /**
  * An interface allowing for a class based iterable provider.

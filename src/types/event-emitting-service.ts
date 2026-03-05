@@ -5,7 +5,7 @@ type EventDefinition = Record<string, (...args: any) => any>;
  * An interface to define specific events that can be emitted by a service.
  * This ensures that the events are typed correctly.
  *
- * @typeParam T - The event definition.
+ * @template T - The event definition.
  * @example
  * ```ts
  * type MyEvents = {

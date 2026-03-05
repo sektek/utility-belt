@@ -12,6 +12,7 @@ import { getComponent } from '../get-component.js';
 
 /**
  * Options for creating a NonePredicate.
+ *
  * @template T - The type of the value to test.
  */
 export type NonePredicateOptions<T> = {
@@ -22,6 +23,7 @@ export type NonePredicateOptions<T> = {
 /**
  * A composite predicate that returns true if none of the
  * constituent predicates return true.
+ *
  * @template T - The type of the value to test. Defaults to void,
  * allowing for predicates that do not require an input value.
  */
@@ -34,6 +36,7 @@ export class NonePredicate<T = void> implements Predicate<T> {
 
   /**
    * Wraps an array of predicate components into a NonePredicate.
+   *
    * @template T - The type of the value to test.
    * @param predicates - The predicate components to combine.
    * @returns An instance of NonePredicate.
@@ -42,6 +45,13 @@ export class NonePredicate<T = void> implements Predicate<T> {
     return new NonePredicate<T>({ predicates: [predicates].flat() });
   }
 
+  /**
+   * Tests the value against all constituent predicates and returns true if
+   * none of the predicates return true.
+   *
+   * @param value - The value to test.
+   * @returns A promise that resolves to the boolean result of the test.
+   */
   async test(value: T): Promise<boolean> {
     for (const predicateFn of this.#predicates) {
       const result = await predicateFn(value);

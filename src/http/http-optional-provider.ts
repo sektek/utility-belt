@@ -5,9 +5,10 @@ import { HttpOperator } from './http-operator.js';
 import { HttpProviderOptions } from './http-provider.js';
 import { ResponseDeserializerFn } from './types/response-deserializer.js';
 
-export class HttpOptionalProvider<R, T = void>
-  implements OptionalProvider<R, T>
-{
+export class HttpOptionalProvider<R, T = void> implements OptionalProvider<
+  R,
+  T
+> {
   #httpOperator: HttpOperator<T>;
   #responseDeserializer: ResponseDeserializerFn<R>;
 

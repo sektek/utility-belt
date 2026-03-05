@@ -7,6 +7,7 @@ import { getComponent } from '../get-component.js';
 
 /**
  * Options for creating an AnyPredicate.
+ *
  * @template T - The type of the value to test.
  */
 export type AnyPredicateOptions<T> = {
@@ -17,6 +18,7 @@ export type AnyPredicateOptions<T> = {
 /**
  * A composite predicate that returns true if any
  * constituent predicates return true.
+ *
  * @template T - The type of the value to test. Defaults to void,
  * allowing for predicates that do not require an input value.
  */
@@ -29,6 +31,7 @@ export class AnyPredicate<T = void> implements Predicate<T> {
 
   /**
    * Wraps an array of predicate components into an AnyPredicate.
+   *
    * @template T - The type of the value to test.
    * @param predicates - The predicate components to combine.
    * @returns An instance of AnyPredicate.
@@ -37,6 +40,12 @@ export class AnyPredicate<T = void> implements Predicate<T> {
     return new AnyPredicate<T>({ predicates: [predicates].flat() });
   }
 
+  /**
+   * Tests the value against all constituent predicates.
+   *
+   * @param value - The value to test.
+   * @returns A promise that resolves to true if any predicate returns true, false otherwise.
+   */
   async test(value: T): Promise<boolean> {
     for (const predicateFn of this.#predicates) {
       const result = await predicateFn(value);

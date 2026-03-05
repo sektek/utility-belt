@@ -57,9 +57,9 @@ class Executor {
  *
  * @template T - The type of executable functions.
  */
-export class ParallelExecutionStrategy<T extends ExecutableFn = ExecutableFn>
-  implements ExecutionStrategy<T>
-{
+export class ParallelExecutionStrategy<
+  T extends ExecutableFn = ExecutableFn,
+> implements ExecutionStrategy<T> {
   #maxConcurrency: number;
 
   constructor(opts: ParallelExecutionStrategyOptions = {}) {
@@ -76,7 +76,8 @@ export class ParallelExecutionStrategy<T extends ExecutableFn = ExecutableFn>
    *
    * @param fns - An iterable or async iterable of functions to execute.
    * @param args - The arguments to pass to each function.
-   * @throws ExecutionError if one or more functions throw errors during execution.
+   *
+   * @throws {ExecutionError} if one or more functions throw errors during execution.
    */
   async execute(
     fns: Iterable<T> | AsyncIterable<T>,

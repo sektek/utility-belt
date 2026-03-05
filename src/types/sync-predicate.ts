@@ -6,7 +6,8 @@ import { Component } from './component.js';
  *
  * This is intended for situations where only synchronous evaluation is possible,
  * such as in synchronous loops or within constructors.
- * @typeParam T - The type of the value to be tested.
+ *
+ * @template T - The type of the value to be tested.
  * @returns boolean - The return type is a boolean indicating whether the
  *                    value matches the predicate.
  *

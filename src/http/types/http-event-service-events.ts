@@ -9,5 +9,6 @@ export type HttpEventServiceEvents<T> = {
   'response:error': (arg: T, response: Response, error: Error) => void;
 };
 
-export interface HttpEventService<T>
-  extends EventEmittingService<HttpEventServiceEvents<T>> {}
+export interface HttpEventService<T> extends EventEmittingService<
+  HttpEventServiceEvents<T>
+> {}
