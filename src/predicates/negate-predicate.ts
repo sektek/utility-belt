@@ -1,7 +1,6 @@
 import { Predicate, PredicateComponent, PredicateFn } from '../types/index.js';
 import { getComponent } from '../get-component.js';
 
-
 /**
  * Options for creating a NegatedPredicate.
  *
