@@ -49,6 +49,10 @@ export class AllPredicate<T = void> implements Predicate<T> {
    * @returns A promise that resolves to the boolean result of the test.
    */
   async test(value: T): Promise<boolean> {
+    if (this.#predicates.length === 0) {
+      return false;
+    }
+
     for (const predicateFn of this.#predicates) {
       const result = await predicateFn(value);
       if (!result) {
