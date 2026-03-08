@@ -45,3 +45,7 @@ export class NegatedPredicate<T> implements Predicate<T> {
     return !(await this.#predicateFn(value));
   }
 }
+
+export const negate = <T>(
+  predicate: PredicateComponent<T>,
+): NegatedPredicate<T> => NegatedPredicate.wrap(predicate);

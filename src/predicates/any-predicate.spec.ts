@@ -1,7 +1,7 @@
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
-import { AnyPredicate } from './any-predicate.js';
+import { AnyPredicate, anyOf } from './any-predicate.js';
 
 use(chaiAsPromised);
 
@@ -32,13 +32,33 @@ describe('AnyPredicate', function () {
     expect(anyPredicate.test(-3)).to.eventually.be.false;
   });
 
-  it('should wrap a predicate component', function () {
-    const isNonZero = { test: (num: number) => num !== 0 };
-    const isLessThanTen = { test: (num: number) => num < 10 };
-    const anyPredicate = AnyPredicate.wrap(isNonZero, isLessThanTen);
+  it('should handle no predicates', function () {
+    const anyPredicate = new AnyPredicate({ predicates: [] });
 
-    expect(anyPredicate.test(5)).to.eventually.be.true;
-    expect(anyPredicate.test(0)).to.eventually.be.true;
-    expect(anyPredicate.test(10)).to.eventually.be.false;
+    expect(anyPredicate.test()).to.eventually.be.false;
+  });
+
+  describe('static wrap method', function () {
+    it('should wrap a predicate component', function () {
+      const isNonZero = { test: (num: number) => num !== 0 };
+      const isLessThanTen = { test: (num: number) => num < 10 };
+      const anyPredicate = AnyPredicate.wrap(isNonZero, isLessThanTen);
+
+      expect(anyPredicate.test(5)).to.eventually.be.true;
+      expect(anyPredicate.test(0)).to.eventually.be.true;
+      expect(anyPredicate.test(10)).to.eventually.be.false;
+    });
+  });
+
+  describe('anyOf helper function', function () {
+    it('should create an AnyPredicate using anyOf', function () {
+      const isNonZero = { test: (num: number) => num !== 0 };
+      const isLessThanTen = { test: (num: number) => num < 10 };
+      const anyPredicate = anyOf(isNonZero, isLessThanTen);
+
+      expect(anyPredicate.test(5)).to.eventually.be.true;
+      expect(anyPredicate.test(0)).to.eventually.be.true;
+      expect(anyPredicate.test(10)).to.eventually.be.false;
+    });
   });
 });
