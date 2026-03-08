@@ -8,6 +8,7 @@ export * from './is-primitive.js';
 export * from './predicates/index.js';
 export * from './no-op.js';
 export * from './object-builder.js';
+export * from './singleton-provider.js';
 export * from './time-sensitive-optional-provider.js';
 export * from './time-sensitive-provider.js';
 export * from './types/index.js';
