@@ -35,4 +35,46 @@ describe('SingletonProvider', function () {
 
     expect(providerFn).to.have.been.calledOnce;
   });
+
+  it('should handle concurrent calls to get()', async function () {
+    const providerFn = sinon.fake.resolves({ value: randomUUID() });
+    const provider = new SingletonProvider({
+      provider: { get: providerFn },
+    });
+
+    const [instance1, instance2] = await Promise.all([
+      provider.get(),
+      provider.get(),
+    ]);
+
+    expect(instance1).to.equal(instance2);
+    expect(providerFn).to.have.been.calledOnce;
+  });
+
+  it('should handle provider function that rejects', async function () {
+    const error = new Error('Provider failed');
+    const providerFn = sinon.fake.rejects(error);
+    const provider = new SingletonProvider({
+      provider: { get: providerFn },
+    });
+
+    await expect(provider.get()).to.be.rejectedWith(error);
+    await expect(provider.get()).to.be.rejectedWith(error);
+
+    expect(providerFn).to.have.been.calledTwice;
+  });
+
+  it('should handle falsy values returned by the provider function', async function () {
+    const providerFn = sinon.fake.resolves(false);
+    const provider = new SingletonProvider<boolean>({
+      provider: { get: providerFn },
+    });
+
+    const instance1 = await provider.get();
+    const instance2 = await provider.get();
+
+    expect(instance1).to.equal(false);
+    expect(instance1).to.equal(instance2);
+    expect(providerFn).to.have.been.calledOnce;
+  });
 });

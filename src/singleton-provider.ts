@@ -40,14 +40,19 @@ export class SingletonProvider<T> {
   }
 
   async get(): Promise<T> {
-    if (this.#instance) {
+    if (this.#instance !== undefined) {
       return this.#instance;
     }
 
-    this.#promise ??= this.#provider();
-
-    this.#instance = await this.#promise;
-    this.#promise = undefined;
+    try {
+      this.#promise ??= this.#provider();
+      this.#instance = await this.#promise;
+    } catch (error) {
+      this.#instance = undefined;
+      throw error;
+    } finally {
+      this.#promise = undefined;
+    }
 
     return this.#instance as T;
   }
