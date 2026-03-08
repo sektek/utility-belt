@@ -63,3 +63,7 @@ export class NonePredicate<T = void> implements Predicate<T> {
     return true;
   }
 }
+
+export const noneOf = <T>(
+  ...predicates: PredicateComponent<T>[]
+): NonePredicate<T> => NonePredicate.wrap(...predicates);

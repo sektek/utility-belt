@@ -57,3 +57,7 @@ export class AnyPredicate<T = void> implements Predicate<T> {
     return false;
   }
 }
+
+export const anyOf = <T>(
+  ...predicates: PredicateComponent<T>[]
+): AnyPredicate<T> => AnyPredicate.wrap(...predicates);

@@ -59,3 +59,7 @@ export class AllPredicate<T = void> implements Predicate<T> {
     return true;
   }
 }
+
+export const allOf = <T>(
+  ...predicates: PredicateComponent<T>[]
+): AllPredicate<T> => AllPredicate.wrap(...predicates);
