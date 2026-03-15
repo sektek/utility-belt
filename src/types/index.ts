@@ -7,6 +7,8 @@ export * from './error-handler.js';
 export * from './event-emitting-service.js';
 export * from './execution-strategy.js';
 export * from './iterable-provider.js';
+export * from './logger.js';
+export * from './logger-provider.js';
 export * from './mutator.js';
 export * from './optional-provider.js';
 export * from './predicate.js';
