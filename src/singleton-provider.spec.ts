@@ -116,4 +116,20 @@ describe('SingletonProvider', function () {
     expect(instance1).to.equal(instance2);
     expect(instance1).to.not.equal(instance3);
   });
+
+  it('reset() should handle provider function that rejects', async function () {
+    const error = new Error('Provider failed');
+    const providerFn = async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      throw error;
+    };
+    const provider = new SingletonProvider({
+      provider: { get: providerFn },
+    });
+
+    const promise1 = provider.get();
+    expect(provider.reset()).to.not.be.rejected;
+
+    expect(promise1).to.be.rejectedWith(error);
+  });
 });
