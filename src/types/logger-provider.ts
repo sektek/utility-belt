@@ -16,8 +16,8 @@ export interface LoggerContextProvider<T = void> extends SyncProvider<
 > {}
 
 export type LoggerContextProviderComponent<T = void> = SyncProviderComponent<
-  LoggerContextProvider<T>,
-  'get'
+  Record<string, unknown>,
+  T
 >;
 
 export interface LoggerProvider<T = void> extends SyncProvider<Logger, T> {
