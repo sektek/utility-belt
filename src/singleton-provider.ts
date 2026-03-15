@@ -56,6 +56,17 @@ export class SingletonProvider<T> {
 
     return this.#instance as T;
   }
+
+  async reset() {
+    try {
+      await this.#promise;
+    } catch {
+      // Ignore errors from the provider during reset
+    } finally {
+      this.#promise = undefined;
+    }
+    this.#instance = undefined;
+  }
 }
 
 /**
