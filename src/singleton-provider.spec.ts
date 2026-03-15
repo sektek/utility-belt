@@ -77,4 +77,43 @@ describe('SingletonProvider', function () {
     expect(instance1).to.equal(instance2);
     expect(providerFn).to.have.been.calledOnce;
   });
+
+  it('reset() should clear the cached instance', async function () {
+    const providerFn = () => randomUUID();
+    const provider = new SingletonProvider({
+      provider: { get: providerFn },
+    });
+
+    const instance1 = await provider.get();
+    const instance2 = await provider.get();
+    await provider.reset();
+    const instance3 = await provider.get();
+    const instance4 = await provider.get();
+
+    expect(instance1).to.equal(instance2);
+    expect(instance1).to.not.equal(instance3);
+    expect(instance3).to.equal(instance4);
+  });
+
+  it('reset() should handle concurrent calls to get()', async function () {
+    const providerFn = async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return randomUUID();
+    };
+    const provider = new SingletonProvider({
+      provider: providerFn,
+    });
+
+    const promise1 = provider.get();
+    const promise2 = provider.get();
+    await provider.reset();
+    const promise3 = provider.get();
+
+    const instance1 = await promise1;
+    const instance2 = await promise2;
+    const instance3 = await promise3;
+
+    expect(instance1).to.equal(instance2);
+    expect(instance1).to.not.equal(instance3);
+  });
 });
