@@ -5,9 +5,7 @@ import { Component } from './component.js';
  *
  * @template T The type of item to be collected.
  */
-export type CollectorFn<T> = (
-  item: T,
-) => unknown | void | PromiseLike<unknown | void>;
+export type CollectorFn<T> = (item: T) => unknown | PromiseLike<unknown>;
 
 /**
  * An interface allowing for a class based collector.
