@@ -13,6 +13,7 @@ export class ArrayCollection<T> implements Collection<T> {
   }
 
   clear() {
+    this.#items.length = 0;
     this.#items = [];
   }
 
