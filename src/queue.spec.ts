@@ -9,6 +9,49 @@ use(chaiAsPromised);
 use(sinonChai);
 
 describe('Queue', function () {
+  describe('constructor', function () {
+    it('should create an empty queue', function () {
+      const queue = new Queue<number>();
+      expect(queue).to.be.instanceOf(Queue);
+    });
+
+    it('should throw an error if maxSize is negative', function () {
+      expect(() => new Queue<number>({ maxSize: -1 })).to.throw(
+        'maxSize must be greater than 0',
+      );
+    });
+
+    it('should throw an error if maxWaitAdd is negative', function () {
+      expect(() => new Queue<number>({ maxWaitAdd: -1 })).to.throw(
+        'maxWaitAdd must be a non-negative number',
+      );
+    });
+
+    it('should throw an error if maxWaitStop is negative', function () {
+      expect(() => new Queue<number>({ maxWaitStop: -1 })).to.throw(
+        'maxWaitStop must be a non-negative number',
+      );
+    });
+
+    it('should throw an error if sleepDuration is negative', function () {
+      expect(() => new Queue<number>({ sleepDuration: -1 })).to.throw(
+        'sleepDuration must be a non-negative number',
+      );
+    });
+
+    it('should throw an error if sleepDurationAdd is negative', function () {
+      expect(() => new Queue<number>({ sleepDurationAdd: -1 })).to.throw(
+        'sleepDurationAdd must be a non-negative number',
+      );
+    });
+
+    it('should throw an error if sleepDurationStop is negative', function () {
+      expect(() => new Queue<number>({ sleepDurationStop: -1 })).to.throw(
+        'sleepDurationStop must be a non-negative number',
+      );
+    });
+  });
+
   it('should process tasks in order', async function () {
     const fakeTask1 = sinon.fake();
     const fakeTask2 = sinon.fake();
@@ -49,33 +92,38 @@ describe('Queue', function () {
     const fakeTask2 = sinon.fake();
 
     const queue = new Queue<() => void>();
-    queue.add(fakeTask1);
-    queue.add(fakeTask2);
-    queue.stop();
+    await queue.add(fakeTask1);
+    await queue.add(fakeTask2);
+    const stopPromise = queue.stop();
 
     for await (const task of queue) {
       task();
     }
-
+    await expect(stopPromise).to.be.fulfilled;
     expect(fakeTask1).to.have.been.called;
     expect(fakeTask2).to.have.been.called;
   });
 
   it('should not allow adding tasks after stop is called', async function () {
     const queue = new Queue<number>();
-    queue.stop();
+    await queue.stop();
     await expect(queue.add(1)).to.be.rejectedWith(
       'Cannot add items to a stopped queue',
     );
   });
 
   it('should wait for space to add items when maxSize is reached', async function () {
+    const racer = async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    };
     const queue = new Queue<number>({ maxSize: 2, sleepDurationAdd: 50 });
     await queue.add(1);
     await queue.add(2);
 
     const addPromise = queue.add(3);
-    expect(addPromise).to.not.be.fulfilled;
+    const racePromise = racer();
+    await Promise.race([addPromise, racePromise]);
+    expect(racePromise).to.have.been.fulfilled;
 
     // Remove an item to make space
     for await (const item of queue) {
@@ -85,6 +133,27 @@ describe('Queue', function () {
     }
 
     await expect(addPromise).to.be.fulfilled;
+  });
+
+  it('should fail to add items if stopped while waiting for space', async function () {
+    const queue = new Queue<number>({ maxSize: 1, sleepDurationAdd: 50 });
+    await queue.add(1);
+
+    const addPromise = queue.add(2);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const stopPromise = queue.stop();
+
+    for await (const item of queue) {
+      if (item === 1) {
+        break;
+      }
+    }
+
+    await expect(stopPromise).to.be.fulfilled;
+
+    await expect(addPromise).to.be.rejectedWith(
+      'Cannot add items to a stopped queue',
+    );
   });
 
   it('should throw an error if max wait time is exceeded when adding to a full queue', async function () {

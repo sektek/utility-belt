@@ -49,22 +49,43 @@ export class Queue<T> implements Collector<T>, AsyncIterable<T> {
   #stopOnEmpty: boolean = false;
 
   constructor(opts: QueueOptions = {}) {
+    if (opts.maxSize !== undefined && opts.maxSize <= 0) {
+      throw new Error('maxSize must be greater than 0');
+    }
     this.#maxSize = opts.maxSize ?? Infinity;
+
+    if (opts.maxWaitAdd !== undefined && opts.maxWaitAdd <= 0) {
+      throw new Error('maxWaitAdd must be a non-negative number');
+    }
     this.#maxWaitAdd = opts.maxWaitAdd ?? Infinity;
+
+    if (opts.maxWaitStop !== undefined && opts.maxWaitStop <= 0) {
+      throw new Error('maxWaitStop must be a non-negative number');
+    }
     this.#maxWaitStop = opts.maxWaitStop ?? 5000;
+
+    if (opts.sleepDuration !== undefined && opts.sleepDuration <= 0) {
+      throw new Error('sleepDuration must be a non-negative number');
+    }
     this.#sleepDuration = opts.sleepDuration ?? 100;
+
+    if (opts.sleepDurationAdd !== undefined && opts.sleepDurationAdd <= 0) {
+      throw new Error('sleepDurationAdd must be a non-negative number');
+    }
     this.#sleepDurationAdd = opts.sleepDurationAdd ?? this.#sleepDuration;
+
+    if (opts.sleepDurationStop !== undefined && opts.sleepDurationStop <= 0) {
+      throw new Error('sleepDurationStop must be a non-negative number');
+    }
     this.#sleepDurationStop = opts.sleepDurationStop ?? this.#sleepDuration;
+
     this.#stopOnEmpty = opts.stopOnEmpty ?? false;
   }
 
   async add(item: T): Promise<void> {
-    if (!this.#running) {
-      throw new Error('Cannot add items to a stopped queue');
-    }
     if (this.#items.length >= this.#maxSize) {
       const startTime = Date.now();
-      while (this.#items.length >= this.#maxSize) {
+      while (this.#items.length >= this.#maxSize && this.#running) {
         if (Date.now() - startTime >= this.#maxWaitAdd) {
           if (this.#maxWaitAdd <= 0) {
             throw new Error('Queue is full.');
@@ -76,6 +97,11 @@ export class Queue<T> implements Collector<T>, AsyncIterable<T> {
         );
       }
     }
+
+    if (!this.#running) {
+      throw new Error('Cannot add items to a stopped queue');
+    }
+
     this.#items.push(item);
   }
 
