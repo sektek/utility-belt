@@ -17,6 +17,12 @@ export const take = async function* <T>(
   limit: number,
   offset = 0,
 ): AsyncGenerator<T> {
+  if (!Number.isSafeInteger(offset) || !Number.isFinite(offset)) {
+    throw new TypeError('Offset must be a finite safe integer');
+  }
+  if (!Number.isSafeInteger(limit)) {
+    throw new TypeError('Limit must be a safe integer');
+  }
   if (offset < 0) {
     offset = 0;
   }
