@@ -48,6 +48,15 @@ describe('take', function () {
     expect(result).to.deep.equal([3, 4]);
   });
 
+  it('should treat negative offset as zero', async function () {
+    const iterable = [1, 2, 3];
+    const result = [];
+    for await (const item of take(iterable, 2, -1)) {
+      result.push(item);
+    }
+    expect(result).to.deep.equal([1, 2]);
+  });
+
   it('should function correctly with async iterables', async function () {
     const asyncIterable = {
       async *[Symbol.asyncIterator]() {
