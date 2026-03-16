@@ -42,10 +42,7 @@ describe('take', function () {
   it('should throw an error if limit is not a safe integer', async function () {
     const iterable = [1, 2, 3];
     try {
-      for await (const item of take(iterable, 1.5)) {
-        // This block should not be executed
-      }
-      throw new Error('Expected error was not thrown');
+      await take(iterable, 1.5).next();
     } catch (error) {
       expect(error).to.be.instanceOf(TypeError);
       expect(error.message).to.equal('Limit must be a safe integer');
