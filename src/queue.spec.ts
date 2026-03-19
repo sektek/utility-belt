@@ -169,6 +169,38 @@ describe('Queue', function () {
     );
   });
 
+  it('should throw an error if iterated concurrently', async function () {
+    const queue = new Queue<number>({ stopOnEmpty: true });
+    await queue.add(1);
+
+    const iter1 = queue[Symbol.asyncIterator]();
+    await iter1.next(); // advances past the guard, sets #iterating = true
+
+    const iter2 = queue[Symbol.asyncIterator]();
+    await expect(iter2.next()).to.be.rejectedWith(
+      'Queue is already being iterated',
+    );
+
+    await iter1.return?.();
+  });
+
+  it('should allow re-iteration after a break', async function () {
+    const queue = new Queue<number>({ stopOnEmpty: true });
+    await queue.add(1);
+    await queue.add(2);
+
+    for await (const item of queue) {
+      if (item === 1) break;
+    }
+
+    await queue.add(3);
+    const collected: number[] = [];
+    for await (const item of queue) {
+      collected.push(item);
+    }
+    expect(collected).to.deep.equal([2, 3]);
+  });
+
   it('should throw an error if max wait time is exceeded when stopping the queue', async function () {
     const queue = new Queue<number>({
       maxWaitStop: 100,

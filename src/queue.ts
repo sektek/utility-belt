@@ -37,9 +37,14 @@ export type QueueOptions = {
   stopOnEmpty?: boolean;
 };
 
+type Node<T> = { value: T; next: Node<T> | null };
+
 export class Queue<T> implements Collector<T>, AsyncIterable<T> {
-  #items: T[] = [];
+  #head: Node<T> | null = null;
+  #tail: Node<T> | null = null;
+  #size: number = 0;
   #running = true;
+  #iterating = false;
   #maxSize: number;
   #maxWaitAdd: number;
   #maxWaitStop: number;
@@ -83,9 +88,9 @@ export class Queue<T> implements Collector<T>, AsyncIterable<T> {
   }
 
   async add(item: T): Promise<void> {
-    if (this.#items.length >= this.#maxSize) {
+    if (this.#size >= this.#maxSize) {
       const startTime = Date.now();
-      while (this.#items.length >= this.#maxSize && this.#running) {
+      while (this.#size >= this.#maxSize && this.#running) {
         if (Date.now() - startTime >= this.#maxWaitAdd) {
           if (this.#maxWaitAdd <= 0) {
             throw new Error('Queue is full.');
@@ -102,7 +107,14 @@ export class Queue<T> implements Collector<T>, AsyncIterable<T> {
       throw new Error('Cannot add items to a stopped queue');
     }
 
-    this.#items.push(item);
+    const node: Node<T> = { value: item, next: null };
+    if (this.#tail) {
+      this.#tail.next = node;
+    } else {
+      this.#head = node;
+    }
+    this.#tail = node;
+    this.#size++;
   }
 
   start() {
@@ -120,7 +132,7 @@ export class Queue<T> implements Collector<T>, AsyncIterable<T> {
   async stop() {
     this.#running = false;
     const startTime = Date.now();
-    while (this.#items.length > 0) {
+    while (this.#size > 0) {
       if (Date.now() - startTime >= this.#maxWaitStop) {
         throw new Error('Queue stop timeout exceeded');
       }
@@ -131,18 +143,30 @@ export class Queue<T> implements Collector<T>, AsyncIterable<T> {
   }
 
   async *[Symbol.asyncIterator]() {
-    while (this.#running || this.#items.length > 0) {
-      if (this.#items.length > 0) {
-        yield this.#items.shift() as T;
-      } else {
-        if (this.#stopOnEmpty) {
-          await this.stop();
+    if (this.#iterating) {
+      throw new Error('Queue is already being iterated');
+    }
+    this.#iterating = true;
+    try {
+      while (this.#running || this.#size > 0) {
+        if (this.#size > 0) {
+          const node = this.#head!;
+          this.#head = node.next;
+          if (!this.#head) this.#tail = null;
+          this.#size--;
+          yield node.value;
         } else {
-          await new Promise(resolve =>
-            setTimeout(resolve, this.#sleepDuration),
-          );
+          if (this.#stopOnEmpty) {
+            await this.stop();
+          } else {
+            await new Promise(resolve =>
+              setTimeout(resolve, this.#sleepDuration),
+            );
+          }
         }
       }
+    } finally {
+      this.#iterating = false;
     }
   }
 }
