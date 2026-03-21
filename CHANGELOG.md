@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.2.1](https://github.com/sektek/utility-belt/compare/v0.2.0...v0.2.1) (2026-03-21)
+
 ## 0.2.0 (2026-03-21)
 
 ### ⚠ BREAKING CHANGES
