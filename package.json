@@ -1,6 +1,6 @@
 {
   "name": "@sektek/utility-belt",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "General utility functions for @sektek projects",
   "author": "Edward Kelly <eddie@sektek.net>",
   "repository": {
@@ -16,7 +16,8 @@
     "lint": "eslint . --cache",
     "test": "mocha",
     "test:cover": "c8 npm run test",
-    "packages:update": "npm install --package-lock-only --workspaces=false"
+    "packages:update": "npm install --package-lock-only --workspaces=false",
+    "release": "release-it --ci"
   },
   "dependencies": {
     "lodash": "^4.17.23",
@@ -24,6 +25,7 @@
     "undici-types": "^7.8.0"
   },
   "devDependencies": {
+    "@release-it/conventional-changelog": "^10.0.6",
     "@sektek/eslint-plugin": "^2.0.0",
     "@sektek/prettier-config": "^2.0.0",
     "@types/chai": "^5.0.1",
@@ -40,6 +42,7 @@
     "mocha": "^10.4.0",
     "nock": "14.0.10",
     "prettier": "^3.2.5",
+    "release-it": "^19.2.4",
     "sinon": "^21.0.0",
     "sinon-chai": "^4.0.0",
     "tsx": "^4.20.3",
