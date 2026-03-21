@@ -14,4 +14,21 @@ describe('sleep', function () {
     await sleep(0);
     expect(Date.now() - start).to.be.lessThan(50);
   });
+
+  it('should resolve early when cancelled', async function () {
+    const start = Date.now();
+    const nap = sleep(60_000);
+    nap.cancel();
+    await nap;
+    expect(Date.now() - start).to.be.lessThan(500);
+  });
+
+  it('should be safe to cancel multiple times', async function () {
+    const start = Date.now();
+    const nap = sleep(60_000);
+    nap.cancel();
+    nap.cancel();
+    await nap;
+    expect(Date.now() - start).to.be.lessThan(500);
+  });
 });
