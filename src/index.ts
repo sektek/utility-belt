@@ -13,6 +13,7 @@ export * from './object-builder.js';
 export * from './predicates/index.js';
 export * from './queue.js';
 export * from './singleton-provider.js';
+export * from './sleep.js';
 export * from './take.js';
 export * from './time-sensitive-optional-provider.js';
 export * from './time-sensitive-provider.js';
