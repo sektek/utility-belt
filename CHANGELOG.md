@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.3](https://github.com/sektek/utility-belt/compare/v0.2.2...v0.2.3) (2026-03-21)
+
+### Bug Fixes
+
+* shrink down package size ([#34](https://github.com/sektek/utility-belt/issues/34)) ([d91fbbd](https://github.com/sektek/utility-belt/commit/d91fbbdc8d15c809814d0b241419c1b03cf1eb44))
+
 ## [0.2.2](https://github.com/sektek/utility-belt/compare/v0.2.0...v0.2.2) (2026-03-21)
 
 ## [0.2.1](https://github.com/sektek/utility-belt/compare/v0.2.0...v0.2.1) (2026-03-21)
