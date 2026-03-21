@@ -19,3 +19,4 @@ eslint.config.js
 tsconfig.json
 tsconfig.build.json
 
+package-lock.json
