@@ -1,4 +1,5 @@
 export * from './builder.js';
+export * from './named.js';
 export * from './collection.js';
 export * from './collector.js';
 export * from './command.js';
