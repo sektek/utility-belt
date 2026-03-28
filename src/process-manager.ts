@@ -164,8 +164,9 @@ export class ProcessManager {
       return;
     }
     const serviceName = isNamed(service) ? ` '${service.name}'` : '';
-    const timeout = new Promise<never>((_resolve, reject) =>
-      setTimeout(
+    let handle: ReturnType<typeof setTimeout>;
+    const timeout = new Promise<never>((_resolve, reject) => {
+      handle = setTimeout(
         () =>
           reject(
             new Error(
@@ -173,8 +174,12 @@ export class ProcessManager {
             ),
           ),
         maxWaitMs,
-      ),
-    );
-    await Promise.race([promise, timeout]);
+      );
+    });
+    try {
+      await Promise.race([promise, timeout]);
+    } finally {
+      clearTimeout(handle!);
+    }
   }
 }
