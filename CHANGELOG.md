@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.4](https://github.com/sektek/utility-belt/compare/v0.2.3...v0.2.4) (2026-03-28)
+
+### Features
+
+* Add Named type and Process Manager implementation ([#35](https://github.com/sektek/utility-belt/issues/35)) ([2886462](https://github.com/sektek/utility-belt/commit/2886462f37cfe22953325e439e0b34f9768fa4e3))
+
 ## [0.2.3](https://github.com/sektek/utility-belt/compare/v0.2.2...v0.2.3) (2026-03-21)
 
 ### Bug Fixes
