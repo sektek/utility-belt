@@ -11,6 +11,7 @@ export * from './no-op.js';
 export * from './null-logger.js';
 export * from './null-logger-provider.js';
 export * from './object-builder.js';
+export * from './process-manager.js';
 export * from './predicates/index.js';
 export * from './queue.js';
 export * from './singleton-provider.js';
