@@ -12,8 +12,13 @@ permissions:
   packages: read
 
 jobs:
-  build:
-    name: Build
+  check:
+    uses: ./.github/workflows/check.yml
+    secrets: inherit
+
+  pack:
+    name: Pack
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,8 +34,6 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build --if-present
-      - name: Test
-        run: npm test --if-present
       - name: Pack
         run: npm pack
       - uses: actions/upload-artifact@v6
@@ -40,7 +43,7 @@ jobs:
 
   publish-gpr:
     name: Publish to GitHub Packages
-    needs: build
+    needs: pack
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,7 +63,7 @@ jobs:
 
   publish-npm:
     name: Publish to NPM
-    needs: build
+    needs: pack
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
