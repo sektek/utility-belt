@@ -1,0 +1,6 @@
+{
+  "mochaExplorer.esmLoader": true,
+  "mochaExplorer.nodeArgv": [
+    "--import=tsx/esm"
+  ]
+}

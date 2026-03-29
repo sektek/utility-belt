@@ -88,36 +88,41 @@ describe('ParallelStrategy', function () {
 
   it('should respect max concurrency', async function () {
     const obj = { foo: 'bar' };
-    const handler1 = async () => {
-      await new Promise<void>(resolve => setTimeout(resolve, 50));
-    };
-    const handler2 = async () => {
-      await new Promise<void>(resolve => setTimeout(resolve, 50));
-    };
-    const handler3 = async () => {
-      await new Promise<void>(resolve => setTimeout(resolve, 50));
-    };
-    const handler1Spy = spy(handler1);
-    const handler2Spy = spy(handler2);
-    const handler3Spy = spy(handler3);
+    let activeConcurrent = 0;
+    let maxObservedConcurrent = 0;
+
+    const makeHandler = () =>
+      spy(async () => {
+        activeConcurrent++;
+        maxObservedConcurrent = Math.max(
+          maxObservedConcurrent,
+          activeConcurrent,
+        );
+        await new Promise<void>(resolve => setTimeout(resolve, 50));
+        activeConcurrent--;
+      });
+
+    const handler1Spy = makeHandler();
+    const handler2Spy = makeHandler();
+    const handler3Spy = makeHandler();
 
     parallelExecutionStrategy = new ParallelExecutionStrategy({
       maxConcurrency: 2,
     });
 
-    const startTime = Date.now();
     await parallelExecutionStrategy.execute(
       [handler1Spy, handler2Spy, handler3Spy],
       obj,
     );
-    const endTime = Date.now();
 
     expect(handler1Spy).to.have.been.calledOnceWith(obj);
     expect(handler2Spy).to.have.been.calledOnceWith(obj);
     expect(handler3Spy).to.have.been.calledOnceWith(obj);
 
-    // Since max concurrency is 2, total time should be at least 100ms
-    expect(endTime - startTime).to.be.gte(100);
+    // Concurrency should never exceed maxConcurrency
+    expect(maxObservedConcurrent).to.be.lte(2);
+    // At least 2 handlers ran concurrently, confirming parallelism is happening
+    expect(maxObservedConcurrent).to.be.gte(2);
   });
 
   it('should capture errors from all handlers when using max concurrency', async function () {
