@@ -3,7 +3,8 @@
     "@release-it/conventional-changelog": {
       "preset": {
         "name": "conventionalcommits",
-        "preMajor": true
+        "preMajor": true,
+        "bumpStrict": true
       },
       "infile": "CHANGELOG.md"
     }
@@ -12,7 +13,9 @@
     "commitMessage": "chore: release v${version} [skip ci]",
     "tagName": "v${version}",
     "push": true,
-    "pushArgs": ["--follow-tags"]
+    "pushArgs": [
+      "--follow-tags"
+    ]
   },
   "github": {
     "release": true,
