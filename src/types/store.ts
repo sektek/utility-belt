@@ -1,7 +1,21 @@
 import { IterableProviderFn } from './iterable-provider.js';
 import { MutatorFn } from './mutator.js';
-import { OptionalProviderFn } from './optional-provider.js';
 import { PredicateFn } from './predicate.js';
+
+type StoreProviderOptions<T> = {
+  /**
+   * An optional initial value to be stored if the key does not already exist
+   * in the store. This can be used to provide a default value for a key when
+   * it is accessed for the first time. If the key does not exist, the provided
+   * value will be stored and undefined will be returned. If the key already
+   * exists in the store, this initial value will be ignored.
+   */
+  initialValue?: T;
+};
+type StoreProviderFn<T, K> = (
+  key: K,
+  options?: StoreProviderOptions<T>,
+) => PromiseLike<T | undefined> | T | undefined;
 
 /**
  * Interface definition for a generic store interface.
@@ -17,11 +31,15 @@ export interface Store<T, K = string> {
    * Retrieves a value from the store by its key.
    *
    * @param key - The key to retrieve the value for.
+   * @param options - Optional parameters for the get operation,
+   * such as an initial value to set if the key does not exist.
+   * Note that if using a Map as the store, options will be ignored
+   * as this is not supported by the Map interface.
    *
    * @returns A promise that resolves to the value associated with the key,
    *          or undefined if the key does not exist in the store.
    */
-  get: OptionalProviderFn<T, K>;
+  get: StoreProviderFn<T, K>;
 
   /**
    * Retrieves all keys from the store.
