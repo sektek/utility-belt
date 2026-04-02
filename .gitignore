@@ -291,3 +291,5 @@ tmp/
 third-party/
 
 dist/
+
+.claude/settings.local.json
