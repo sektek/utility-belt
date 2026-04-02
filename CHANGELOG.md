@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.6](https://github.com/sektek/utility-belt/compare/v0.2.5...v0.2.6) (2026-04-02)
+
+### Features
+
+* Add initialValue option to Store.get ([#38](https://github.com/sektek/utility-belt/issues/38)) ([17ecae8](https://github.com/sektek/utility-belt/commit/17ecae82dfa121c9ac60d00236471fbc28ee3e68))
+
 ## [0.2.5](https://github.com/sektek/utility-belt/compare/v0.2.4...v0.2.5) (2026-03-29)
 
 ## [0.2.4](https://github.com/sektek/utility-belt/compare/v0.2.3...v0.2.4) (2026-03-28)
