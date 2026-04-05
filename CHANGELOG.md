@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.0](https://github.com/sektek/utility-belt/compare/v0.2.7...v0.3.0) (2026-04-05)
+
+### ⚠ BREAKING CHANGES
+
+* Rename DefaultProvider to FallbackProvider (#41)
+
+### Features
+
+* Rename DefaultProvider to FallbackProvider ([#41](https://github.com/sektek/utility-belt/issues/41)) ([17fee6b](https://github.com/sektek/utility-belt/commit/17fee6b5d48cee2cad3eb0026cd1fa5c2ede2332))
+
 ## [0.2.7](https://github.com/sektek/utility-belt/compare/v0.2.6...v0.2.7) (2026-04-05)
 
 ### Features
