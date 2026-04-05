@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.7](https://github.com/sektek/utility-belt/compare/v0.2.6...v0.2.7) (2026-04-05)
+
+### Features
+
+* added logging to ProcessManager ([55ceb09](https://github.com/sektek/utility-belt/commit/55ceb09a04daa3f46d6159d1de4c15f109fffa67))
+* DefaultLoggerProvider ([cb8f1b4](https://github.com/sektek/utility-belt/commit/cb8f1b4c74d34852e63e32008d211c40b84ab2f6))
+* implement AbstractComponent and AbstractService ([891b3f4](https://github.com/sektek/utility-belt/commit/891b3f4e53a075f3ea1fa45afed9b1ebd74c7438))
+
+### Bug Fixes
+
+* correct interface for SyncProviderFn ([b7dd5eb](https://github.com/sektek/utility-belt/commit/b7dd5eb04a2a40b2274a3bc6ffdb67174be2f9dc))
+
 ## [0.2.6](https://github.com/sektek/utility-belt/compare/v0.2.5...v0.2.6) (2026-04-02)
 
 ### Features

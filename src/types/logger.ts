@@ -15,6 +15,8 @@ type LeveledLogMethod = (
     | [entry: Omit<LogEntry, 'level'>]
 ) => void | unknown;
 
+export type LoggerContext = Record<string, unknown>;
+
 export interface Logger {
   log: LogFn;
   error: LeveledLogMethod;
@@ -28,5 +30,5 @@ export interface Logger {
   isInfoEnabled(): boolean;
   isDebugEnabled(): boolean;
 
-  child(context: Record<string, unknown>): Logger;
+  child(context: LoggerContext): Logger;
 }

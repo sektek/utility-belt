@@ -1,3 +1,4 @@
+import { AbstractComponent, ComponentOptions } from './abstract-component.js';
 import {
   ExecutionStrategyComponent,
   ExecutionStrategyFn,
@@ -8,9 +9,7 @@ import { getComponent } from './get-component.js';
 import { isNamed } from './is-named.js';
 import { serialExecutionStrategy } from './execution-strategies/index.js';
 
-export type ProcessManagerOptions = {
-  /** A name identifying this process manager instance. */
-  name: string;
+export type ProcessManagerOptions = ComponentOptions & {
   /**
    * The execution strategy to use when starting and stopping services.
    * Accepts either an `ExecutionStrategy` object or a plain function.
@@ -64,8 +63,7 @@ export type ProcessManagerOptions = {
  * // … later …
  * await manager.stop();
  */
-export class ProcessManager {
-  #name: string;
+export class ProcessManager extends AbstractComponent {
   #executionStrategy: ExecutionStrategyFn;
   #maxStartWaitMs: number;
   #maxStopWaitMs: number;
@@ -73,17 +71,9 @@ export class ProcessManager {
   #stoppables: Set<Stoppable> = new Set();
   #signalListener: (() => void) | undefined;
 
-  /**
-   * The name identifying this process manager instance.
-   *
-   * @returns The name of this process manager.
-   */
-  get name(): string {
-    return this.#name;
-  }
-
   constructor(opts: ProcessManagerOptions) {
-    this.#name = opts.name;
+    super(opts);
+
     this.#executionStrategy = getComponent(
       opts.executionStrategy ?? serialExecutionStrategy,
       'execute',
@@ -108,10 +98,16 @@ export class ProcessManager {
    * @param service - The service to register.
    */
   add(service: Startable | Stoppable): void {
+    const logger = this.logger();
+    const serviceName = isNamed(service) ? service.name : undefined;
+
     if ('start' in service) {
+      logger.info('startable added', { service: serviceName });
       this.#startables.add(service);
     }
+
     if ('stop' in service) {
+      logger.info('stoppable added', { service: serviceName });
       this.#stoppables.add(service);
     }
   }
@@ -123,10 +119,27 @@ export class ProcessManager {
    * @throws {Error} If any service's `start()` rejects, or if a service exceeds `maxStartWaitMs`.
    */
   async start(): Promise<void> {
+    const logger = this.logger();
+    logger.info('starting services', { count: this.#startables.size });
     await this.#executionStrategy(
       [...this.#startables].map(
         s => () =>
-          this.#withTimeout(() => s.start(), this.#maxStartWaitMs, 'start', s),
+          this.#withTimeout(
+            async () => {
+              const serviceName = isNamed(s) ? s.name : undefined;
+              const startTime = Date.now();
+              logger.info('starting service', { service: serviceName });
+              await s.start();
+              const duration = Date.now() - startTime;
+              logger.info('service started', {
+                service: serviceName,
+                durationMs: duration,
+              });
+            },
+            this.#maxStartWaitMs,
+            'start',
+            s,
+          ),
       ),
     );
   }
@@ -139,6 +152,8 @@ export class ProcessManager {
    * @throws {Error} If any service's `stop()` rejects, or if a service exceeds `maxStopWaitMs`.
    */
   async stop(): Promise<void> {
+    const logger = this.logger();
+    logger.info('stopping services', { count: this.#stoppables.size });
     if (this.#signalListener) {
       process.off('SIGTERM', this.#signalListener);
       process.off('SIGINT', this.#signalListener);
@@ -147,7 +162,22 @@ export class ProcessManager {
     await this.#executionStrategy(
       [...this.#stoppables].map(
         s => () =>
-          this.#withTimeout(() => s.stop(), this.#maxStopWaitMs, 'stop', s),
+          this.#withTimeout(
+            async () => {
+              const serviceName = isNamed(s) ? s.name : undefined;
+              const startTime = Date.now();
+              logger.info('stopping service', { service: serviceName });
+              await s.stop();
+              const duration = Date.now() - startTime;
+              logger.info('service stopped', {
+                service: serviceName,
+                durationMs: duration,
+              });
+            },
+            this.#maxStopWaitMs,
+            'stop',
+            s,
+          ),
       ),
     );
   }
@@ -163,19 +193,18 @@ export class ProcessManager {
       await promise;
       return;
     }
-    const serviceName = isNamed(service) ? ` '${service.name}'` : '';
+
+    const serviceName = isNamed(service) ? service.name : undefined;
     let handle: ReturnType<typeof setTimeout>;
-    const timeout = new Promise<never>((_resolve, reject) => {
-      handle = setTimeout(
-        () =>
-          reject(
-            new Error(
-              `ProcessManager '${this.#name}': service${serviceName} ${phase} timed out`,
-            ),
-          ),
-        maxWaitMs,
-      );
+    const timeout = new Promise((_resolve, reject) => {
+      handle = setTimeout(() => {
+        const error = new Error(
+          `ProcessManager '${this.name}': service '${serviceName}' - ${phase} timed out`,
+        );
+        reject(error);
+      }, maxWaitMs);
     });
+
     try {
       await Promise.race([promise, timeout]);
     } finally {
