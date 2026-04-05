@@ -6,45 +6,48 @@ import { Provider, ProviderComponent, ProviderFn } from './types/provider.js';
 import { getComponent } from './get-component.js';
 
 /**
- * Options for the DefaultProvider constructor.
+ * Options for the {@link FallbackProvider} constructor.
  *
  * @template R - The type of the value returned by the provider.
  * @template T - The type of the argument passed to the provider.
  *                If not provided, the provider does not expect an argument.
  */
-export type DefaultProviderOptions<R, T = void> = {
-  /** The provider component that will be wrapped. */
+export type FallbackProviderOptions<R, T = void> = {
+  /** The optional provider component to wrap. When it returns `undefined`, the fallback is used. */
   provider: OptionalProviderComponent<R, T>;
 
   /**
-   * An optional default value to return if the provider returns undefined.
-   * If not provided, an error will be thrown if the provider returns undefined.
+   * A static fallback value returned when the provider returns `undefined`.
+   * If neither `defaultValue` nor `defaultValueProvider` is supplied, an error
+   * is thrown at construction time.
    */
   defaultValue?: R;
 
   /**
-   * An optional default value provider component to get the default value from.
-   * If not provided, the defaultValue will be used. If neither is provided,
-   * an error will be thrown. If both are provided, the defaultValueProvider
-   * takes precedence.
+   * A provider component whose result is used as the fallback when the wrapped
+   * provider returns `undefined`. Takes precedence over `defaultValue` when both
+   * are supplied.
    */
   defaultValueProvider?: ProviderComponent<R, T>;
 };
 
 /**
- * DefaultProvider is a class that wraps an optional provider component.
- * It provides a method to get a value from the provider, returning a default
- * value if the provider returns undefined.
+ * Wraps an optional provider and guarantees a non-`undefined` result by
+ * applying a fallback when the inner provider returns `undefined`.
+ *
+ * The fallback is either a static `defaultValue` or a `defaultValueProvider`
+ * (which takes precedence). At least one must be supplied; if neither is
+ * provided the constructor throws immediately.
  *
  * @template R - The type of the value returned by the provider.
  * @template T - The type of the argument passed to the provider.
  *                If not provided, the provider does not expect an argument.
  */
-export class DefaultProvider<R, T = void> implements Provider<R, T> {
+export class FallbackProvider<R, T = void> implements Provider<R, T> {
   #optionalProvider: OptionalProviderFn<R, T>;
   #defaultValueProvider: ProviderFn<R, T>;
 
-  constructor(opts: DefaultProviderOptions<R, T>) {
+  constructor(opts: FallbackProviderOptions<R, T>) {
     if (opts.defaultValue === undefined && !opts.defaultValueProvider) {
       throw new Error(
         'Either defaultValue or defaultValueProvider must be provided.',
@@ -61,12 +64,12 @@ export class DefaultProvider<R, T = void> implements Provider<R, T> {
   }
 
   /**
-   * Wraps an optional provider component with a default value, returning a new
-   * DefaultProvider instance.
+   * Wraps an optional provider with a static fallback value, returning a new
+   * {@link FallbackProvider} instance.
    *
    * @param provider - The optional provider component to wrap.
-   * @param defaultValue - The default value to return if the provider returns undefined.
-   * @returns A new DefaultProvider instance wrapping the provided component.
+   * @param defaultValue - The fallback value to return if the provider returns `undefined`.
+   * @returns A new {@link FallbackProvider} wrapping the provided component.
    */
   static wrap<R, T = void>(
     provider: OptionalProviderComponent<R, T>,
@@ -77,15 +80,16 @@ export class DefaultProvider<R, T = void> implements Provider<R, T> {
         'defaultValue must be provided and cannot be undefined.',
       );
     }
-    return new DefaultProvider<R, T>({ provider, defaultValue });
+    return new FallbackProvider<R, T>({ provider, defaultValue });
   }
 
   /**
-   * Gets the value from the wrapped provider, returning the default value if
-   * the provider returns undefined.
+   * Gets the value from the wrapped provider, returning the fallback value if
+   * the provider returns `undefined`.
    *
    * @param arg - The argument to pass to the provider function.
-   * @returns The value or a promise that resolves to the value.
+   * @returns The provider's value, or the fallback if the provider returned `undefined`.
+   * @throws {Error} If both the provider and the fallback return `undefined`.
    */
   async get(arg: T): Promise<R> {
     let result = await this.#optionalProvider(arg);

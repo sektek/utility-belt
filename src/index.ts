@@ -1,5 +1,5 @@
 export * from './array-collection.js';
-export * from './default-provider.js';
+export * from './fallback-provider.js';
 export * from './execution-strategies/index.js';
 export * from './get-component.js';
 export * from './http/index.js';
