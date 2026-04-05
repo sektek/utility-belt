@@ -1,18 +1,18 @@
 import { expect } from 'chai';
 
-import { DefaultProvider } from './default-provider.js';
+import { FallbackProvider } from './fallback-provider.js';
 
-describe('DefaultProvider', function () {
+describe('FallbackProvider', function () {
   describe('class', function () {
     it('should create an instance with the provided provider', function () {
       const mockProvider = () => `Hello, World!`;
 
-      const provider = new DefaultProvider<string>({
+      const provider = new FallbackProvider<string>({
         provider: mockProvider,
         defaultValue: 'Default Value',
       });
 
-      expect(provider).to.be.instanceOf(DefaultProvider);
+      expect(provider).to.be.instanceOf(FallbackProvider);
       expect(provider).to.have.property('get').that.is.a('function');
     });
 
@@ -21,7 +21,7 @@ describe('DefaultProvider', function () {
 
       expect(
         () =>
-          new DefaultProvider<string>({
+          new FallbackProvider<string>({
             provider: mockProvider,
           }),
       ).to.throw(
@@ -32,7 +32,7 @@ describe('DefaultProvider', function () {
     it('should call the provider and return the result', async function () {
       const mockProvider = (arg?: string) => `Hello, ${arg || 'World'}!`;
 
-      const provider = new DefaultProvider<string, string>({
+      const provider = new FallbackProvider<string, string>({
         provider: mockProvider,
         defaultValue: 'Default Value',
       });
@@ -45,7 +45,7 @@ describe('DefaultProvider', function () {
     it('should return default value if provider returns undefined', async function () {
       const mockProvider = () => undefined;
 
-      const provider = new DefaultProvider<string>({
+      const provider = new FallbackProvider<string>({
         provider: mockProvider,
         defaultValue: 'Default Value',
       });
@@ -58,7 +58,7 @@ describe('DefaultProvider', function () {
     it('should handle provider that does not expect an argument', async function () {
       const mockProvider = () => 'No argument needed';
 
-      const provider = new DefaultProvider<string>({
+      const provider = new FallbackProvider<string>({
         provider: mockProvider,
         defaultValue: 'Default Value',
       });
@@ -72,7 +72,7 @@ describe('DefaultProvider', function () {
       const mockProvider = () => undefined;
       const defaultValueProvider = () => 'Default Value from Provider';
 
-      const provider = new DefaultProvider<string>({
+      const provider = new FallbackProvider<string>({
         provider: mockProvider,
         defaultValueProvider,
       });
@@ -85,7 +85,7 @@ describe('DefaultProvider', function () {
     it('should throw an error if no default value could be provided', async function () {
       const mockProvider = () => undefined;
 
-      const provider = new DefaultProvider<string>({
+      const provider = new FallbackProvider<string>({
         provider: mockProvider,
         defaultValueProvider: () => undefined as unknown as string,
       });
@@ -98,7 +98,7 @@ describe('DefaultProvider', function () {
     it('should allow falsy default values', async function () {
       const mockProvider = () => undefined;
 
-      const provider = new DefaultProvider<number>({
+      const provider = new FallbackProvider<number>({
         provider: mockProvider,
         defaultValue: 0,
       });
@@ -113,14 +113,14 @@ describe('DefaultProvider', function () {
     it('should return a function that calls the provider and returns the result', async function () {
       const mockProvider = (arg?: string) => `Hello, ${arg || 'World'}!`;
 
-      const wrappedProvider = DefaultProvider.wrap(
+      const wrappedProvider = FallbackProvider.wrap(
         mockProvider,
         'Default Value',
       );
 
       const result = await wrappedProvider.get('Alice');
 
-      expect(wrappedProvider).to.be.instanceOf(DefaultProvider);
+      expect(wrappedProvider).to.be.instanceOf(FallbackProvider);
       expect(result).to.equal('Hello, Alice!');
     });
 
@@ -128,7 +128,7 @@ describe('DefaultProvider', function () {
       const mockProvider = () => undefined;
 
       expect(() =>
-        DefaultProvider.wrap(mockProvider, undefined as unknown as string),
+        FallbackProvider.wrap(mockProvider, undefined as unknown as string),
       ).to.throw('defaultValue must be provided and cannot be undefined.');
     });
   });
