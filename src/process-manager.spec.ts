@@ -93,10 +93,10 @@ describe('ProcessManager', function () {
     });
 
     it('rejects with a timeout error when maxStartWaitMs is exceeded', async function () {
-      manager = new ProcessManager({ name: 'test', maxStartWaitMs: 20 });
+      manager = new ProcessManager({ name: 'test', maxStartWaitMs: 40 });
       manager.add({ start: () => delay(200) });
       await expect(manager.start()).to.be.rejectedWith(
-        "ProcessManager 'test': service start timed out",
+        "ProcessManager 'test': service 'undefined' - start timed out",
       );
     });
 
@@ -107,7 +107,7 @@ describe('ProcessManager', function () {
         start: () => delay(200),
       } as Parameters<ProcessManager['add']>[0]);
       await expect(manager.start()).to.be.rejectedWith(
-        "ProcessManager 'test': service 'slow-service' start timed out",
+        "ProcessManager 'test': service 'slow-service' - start timed out",
       );
     });
 
@@ -156,7 +156,7 @@ describe('ProcessManager', function () {
       manager = new ProcessManager({ name: 'test', maxStopWaitMs: 20 });
       manager.add({ stop: () => delay(200) });
       await expect(manager.stop()).to.be.rejectedWith(
-        "ProcessManager 'test': service stop timed out",
+        "ProcessManager 'test': service 'undefined' - stop timed out",
       );
     });
 
@@ -167,7 +167,7 @@ describe('ProcessManager', function () {
         stop: () => delay(200),
       } as Parameters<ProcessManager['add']>[0]);
       await expect(manager.stop()).to.be.rejectedWith(
-        "ProcessManager 'test': service 'slow-service' stop timed out",
+        "ProcessManager 'test': service 'slow-service' - stop timed out",
       );
     });
 

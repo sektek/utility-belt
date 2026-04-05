@@ -12,7 +12,7 @@ import { Component } from './component.js';
  *                If not provided, the provider does not expect an argument.
  * @returns R - The return type is the value provided by the provider.
  */
-export type SyncProviderFn<R, T = void> = (arg: T | void) => R;
+export type SyncProviderFn<R, T = void> = (arg: T) => R;
 
 /** An interface allowing for class based synchronous provider */
 export interface SyncProvider<R, T = void> {

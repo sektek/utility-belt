@@ -1,4 +1,7 @@
+export * from './abstract-component.js';
+export * from './abstract-service.js';
 export * from './array-collection.js';
+export * from './default-logger-provider.js';
 export * from './default-provider.js';
 export * from './execution-strategies/index.js';
 export * from './get-component.js';
