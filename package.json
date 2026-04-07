@@ -15,6 +15,7 @@
     "build": "npx tsc -p tsconfig.build.json",
     "lint": "eslint . --cache",
     "test": "mocha",
+    "test:min": "mocha --config .mocharc.min.cjs",
     "test:cover": "c8 npm run test",
     "packages:update": "npm install --package-lock-only --workspaces=false",
     "release": "release-it --ci"
