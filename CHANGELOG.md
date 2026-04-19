@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1](https://github.com/sektek/utility-belt/compare/v0.3.0...v0.3.1) (2026-04-19)
+
+### Features
+
+* replace Node events with eventemitter3 for browser compatibility ([#43](https://github.com/sektek/utility-belt/issues/43)) ([46651d5](https://github.com/sektek/utility-belt/commit/46651d53ce676a5223dac75f8752f757db87892a))
+
 ## [0.3.0](https://github.com/sektek/utility-belt/compare/v0.2.7...v0.3.0) (2026-04-05)
 
 ### ⚠ BREAKING CHANGES
