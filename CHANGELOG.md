@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.2](https://github.com/sektek/utility-belt/compare/v0.3.1...v0.3.2) (2026-04-19)
+
+### Features
+
+* AbstractComponent extends EventEmitter for browser-compatible event emission ([#44](https://github.com/sektek/utility-belt/issues/44)) ([8db07a0](https://github.com/sektek/utility-belt/commit/8db07a05610c1c0a41988f9f5478290e90be0f3f))
+
 ## [0.3.1](https://github.com/sektek/utility-belt/compare/v0.3.0...v0.3.1) (2026-04-19)
 
 ### Features
