@@ -1,3 +1,5 @@
+import { EventEmitter } from 'eventemitter3';
+
 import { LoggerProvider } from './types/logger-provider.js';
 import { NullLoggerProvider } from './null-logger-provider.js';
 
@@ -40,11 +42,12 @@ export type ComponentOptions<T = void> = {
  * @template T - The type of object passed to {@link AbstractComponent.logger}
  *               and forwarded to the logger provider. Defaults to `void`.
  */
-export abstract class AbstractComponent<T = void> {
+export abstract class AbstractComponent<T = void> extends EventEmitter {
   #name: string;
   #loggerProvider: LoggerProvider<T>;
 
   constructor(opts: ComponentOptions<T> = {}) {
+    super();
     this.#name = opts.name ?? generateName(this.constructor.name);
     this.#loggerProvider = opts.loggerProvider ?? new NullLoggerProvider();
   }
