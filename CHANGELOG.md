@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.3](https://github.com/sektek/utility-belt/compare/v0.3.2...v0.3.3) (2026-07-25)
+
+### Features
+
+* predicate utils isStartable and isStoppable ([#45](https://github.com/sektek/utility-belt/issues/45)) ([8946eeb](https://github.com/sektek/utility-belt/commit/8946eeb2f31f469ea79cd692a39cb678775ed6de))
+
 ## [0.3.2](https://github.com/sektek/utility-belt/compare/v0.3.1...v0.3.2) (2026-04-19)
 
 ### Features
