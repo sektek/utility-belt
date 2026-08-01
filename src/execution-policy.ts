@@ -1,47 +1,77 @@
+import { isObject } from './is-object.js';
+import { isPromiseLike } from './is-promise-like.js';
 import { sleep } from './sleep.js';
 
-type AsyncMethod<
-  TThis = unknown,
-  TArgs extends unknown[] = unknown[],
-  TResult = unknown,
-> = (this: TThis, ...args: TArgs) => Promise<TResult>;
+type AsyncMethod<T = unknown, A extends unknown[] = unknown[], R = unknown> = (
+  this: T,
+  ...args: A
+) => Promise<R>;
 
-export type AsyncMethodDecorator = <TThis, TArgs extends unknown[], TResult>(
+/**
+ * A TypeScript method decorator that can be applied only to asynchronous
+ * methods while preserving their receiver, arguments, and resolved result
+ * types.
+ */
+export type AsyncMethodDecorator = <T, A extends unknown[], R>(
   target: object,
   propertyKey: string | symbol,
-  descriptor: TypedPropertyDescriptor<AsyncMethod<TThis, TArgs, TResult>>,
-) => TypedPropertyDescriptor<AsyncMethod<TThis, TArgs, TResult>> | void;
+  descriptor: TypedPropertyDescriptor<AsyncMethod<T, A, R>>,
+) => TypedPropertyDescriptor<AsyncMethod<T, A, R>> | void;
 
+/**
+ * Information about a failed method execution supplied to retry callbacks.
+ */
 export type RetryExecutionContext = Readonly<{
+  /** The value thrown or rejected by the failed execution. */
   error: unknown;
+  /** The one-based number of the execution that just failed. */
   attempt: number;
+  /** The total number of executions allowed by the policy. */
   maxAttempts: number;
 }>;
 
+/**
+ * A fixed delay in milliseconds or a callback that computes one from the
+ * current retry context. The callback may be synchronous or asynchronous.
+ */
 export type RetryDelay =
   | number
   | ((context: RetryExecutionContext) => number | PromiseLike<number>);
 
+/**
+ * A synchronous or asynchronous callback that determines whether a failed
+ * execution should be retried.
+ */
 export type RetryPredicate = (
   context: RetryExecutionContext,
 ) => boolean | PromiseLike<boolean>;
 
+/** Options for {@link ExecutionPolicy.retryable}. */
 export type RetryableExecutionPolicyOptions = {
+  /**
+   * The maximum number of executions, including the initial execution.
+   * Must be a positive safe integer.
+   */
   maxAttempts: number;
+  /**
+   * The delay before an eligible retry. Defaults to zero milliseconds.
+   */
   delay?: RetryDelay;
+  /**
+   * Determines which failures are retryable. All failures retry by default.
+   */
   retryIf?: RetryPredicate;
 };
 
-/** Reserved for future keyed coalescing options. */
+/**
+ * Options for {@link ExecutionPolicy.shared}.
+ *
+ * This type is intentionally empty in the initial implementation. It is
+ * reserved for future keyed coalescing options.
+ */
 export type SharedExecutionPolicyOptions = Record<string, never>;
 
 type AnyAsyncMethod = AsyncMethod<unknown, unknown[], unknown>;
-
-const isObject = (value: unknown): value is object =>
-  (typeof value === 'object' && value !== null) || typeof value === 'function';
-
-const isPromiseLike = (value: unknown): value is PromiseLike<unknown> =>
-  isObject(value) && typeof (value as { then?: unknown }).then === 'function';
 
 const invoke = (
   method: AnyAsyncMethod,
@@ -127,10 +157,27 @@ const decorate =
     return descriptor;
   };
 
-/** Policies for controlling asynchronous method execution. */
+/**
+ * Decorator factories for controlling asynchronous method execution.
+ *
+ * Multiple policies can decorate the same method. Standard TypeScript
+ * decorator ordering applies: the decorator closest to the method wraps it
+ * first, and each decorator above it wraps the result.
+ */
 export class ExecutionPolicy {
   private constructor() {}
 
+  /**
+   * Creates a decorator that retries rejected method executions.
+   *
+   * The original receiver and arguments are reused for every attempt. The
+   * final failure is propagated unchanged when no attempts remain or when
+   * `retryIf` returns `false`.
+   *
+   * @param opts - Retry count, delay, and failure-filtering options.
+   * @returns A decorator for an asynchronous method.
+   * @throws {RangeError} If `maxAttempts` or a fixed delay is invalid.
+   */
   static retryable(
     opts: RetryableExecutionPolicyOptions,
   ): AsyncMethodDecorator {
@@ -149,6 +196,18 @@ export class ExecutionPolicy {
     );
   }
 
+  /**
+   * Creates a decorator that shares one in-flight method execution per object
+   * instance.
+   *
+   * Concurrent callers receive the first caller's promise and outcome,
+   * regardless of their arguments. The shared execution is cleared after it
+   * fulfills or rejects, allowing the next call to start a new execution.
+   *
+   * @param opts - Reserved options for future keyed coalescing support.
+   * @returns A decorator for an asynchronous method.
+   * @throws {TypeError} If the reserved options object contains any fields.
+   */
   static shared(opts: SharedExecutionPolicyOptions = {}): AsyncMethodDecorator {
     if (Object.keys(opts).length > 0) {
       throw new TypeError('Shared execution policy options are reserved');
