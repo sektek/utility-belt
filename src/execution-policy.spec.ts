@@ -1,7 +1,7 @@
 import {
   ExecutionPolicy,
   type RetryExecutionContext,
-} from './execution-policy.js';
+} from './execution-policy/index.js';
 import { expect } from 'chai';
 import sinon from 'sinon';
 

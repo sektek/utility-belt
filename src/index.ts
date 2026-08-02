@@ -3,7 +3,7 @@ export * from './abstract-service.js';
 export * from './array-collection.js';
 export * from './fallback-provider.js';
 export * from './default-logger-provider.js';
-export * from './execution-policy.js';
+export * from './execution-policy/index.js';
 export * from './execution-strategies/index.js';
 export * from './get-component.js';
 export * from './http/index.js';
