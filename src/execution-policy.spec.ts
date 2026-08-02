@@ -103,6 +103,26 @@ describe('ExecutionPolicy', function () {
       expect(subject.calls).to.equal(1);
     });
 
+    it('accepts a predicate component', async function () {
+      const retryIf = {
+        test: sinon.stub().onFirstCall().returns(true).returns(false),
+      };
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.retryable({ maxAttempts: 3, retryIf })
+        async run(): Promise<void> {
+          this.calls += 1;
+          throw new Error(`failure-${this.calls}`);
+        }
+      }
+      const subject = new Subject();
+      await expect(subject.run()).to.be.rejectedWith('failure-2');
+      expect(subject.calls).to.equal(2);
+      expect(retryIf.test).to.have.been.calledTwice;
+      expect(retryIf.test.firstCall.firstArg).to.include({ attempt: 1 });
+      expect(retryIf.test.secondCall.firstArg).to.include({ attempt: 2 });
+    });
+
     it('waits for a fixed delay only before retrying', async function () {
       const clock = sinon.useFakeTimers();
       try {

@@ -1,3 +1,5 @@
+import { PredicateComponent, PredicateFn } from './types/predicate.js';
+import { getComponent } from './get-component.js';
 import { isObject } from './is-object.js';
 import { isPromiseLike } from './is-promise-like.js';
 import { sleep } from './sleep.js';
@@ -42,9 +44,7 @@ export type RetryDelay =
  * A synchronous or asynchronous callback that determines whether a failed
  * execution should be retried.
  */
-export type RetryPredicate = (
-  context: RetryExecutionContext,
-) => boolean | PromiseLike<boolean>;
+export type RetryPredicate = PredicateComponent<RetryExecutionContext>;
 
 /** Options for {@link ExecutionPolicy.retryable}. */
 export type RetryableExecutionPolicyOptions = {
@@ -99,9 +99,9 @@ const validateDelay = (delay: number): number => {
 };
 
 const shouldRetry = async (
-  opts: RetryableExecutionPolicyOptions,
+  retryIf: PredicateFn<RetryExecutionContext> | undefined,
   context: RetryExecutionContext,
-): Promise<boolean> => !opts.retryIf || (await opts.retryIf(context));
+): Promise<boolean> => !retryIf || (await retryIf(context));
 
 const getRetryDelay = async (
   opts: RetryableExecutionPolicyOptions,
@@ -118,6 +118,7 @@ const executeWithRetry = async (
   receiver: unknown,
   args: unknown[],
   opts: RetryableExecutionPolicyOptions,
+  retryIf: PredicateFn<RetryExecutionContext> | undefined,
 ): Promise<unknown> => {
   for (let attempt = 1; attempt <= opts.maxAttempts; attempt += 1) {
     try {
@@ -131,7 +132,7 @@ const executeWithRetry = async (
         attempt,
         maxAttempts: opts.maxAttempts,
       };
-      if (!(await shouldRetry(opts, context))) {
+      if (!(await shouldRetry(retryIf, context))) {
         throw error;
       }
       const delay = await getRetryDelay(opts, context);
@@ -187,11 +188,17 @@ export class ExecutionPolicy {
     if (typeof opts.delay === 'number') {
       validateDelay(opts.delay);
     }
+    const retryIf = opts.retryIf
+      ? getComponent<RetryPredicate, PredicateFn<RetryExecutionContext>>(
+          opts.retryIf,
+          'test',
+        )
+      : undefined;
 
     return decorate(
       method =>
         function (this: unknown, ...args: unknown[]) {
-          return executeWithRetry(method, this, args, opts);
+          return executeWithRetry(method, this, args, opts, retryIf);
         },
     );
   }
