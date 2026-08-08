@@ -1,12 +1,27 @@
 import {
   ExecutionPolicy,
   type RetryExecutionContext,
+  RetryableExecutionPolicy,
+  SharedExecutionPolicy,
 } from './execution-policy/index.js';
 import { expect } from 'chai';
 import sinon from 'sinon';
 
 describe('ExecutionPolicy', function () {
   describe('retryable', function () {
+    it('can be applied directly as a bound policy method', async function () {
+      const policy = new RetryableExecutionPolicy({ maxAttempts: 2 });
+      class Subject {
+        calls = 0;
+        @policy.wrap.bind(policy)
+        async run(): Promise<number> {
+          if (++this.calls === 1) throw new Error('temporary');
+          return this.calls;
+        }
+      }
+      expect(await new Subject().run()).to.equal(2);
+    });
+
     it('returns successful results without retrying', async function () {
       class Subject {
         calls = 0;
@@ -64,11 +79,11 @@ describe('ExecutionPolicy', function () {
         calls = 0;
         @ExecutionPolicy.retryable({
           maxAttempts: 3,
-          retryIf: async context => {
+          retryPredicate: async context => {
             contexts.push(context);
             return true;
           },
-          delay: async context => {
+          delayProvider: async context => {
             contexts.push(context);
             return 0;
           },
@@ -88,11 +103,14 @@ describe('ExecutionPolicy', function () {
       ).to.deep.equal(['failure-1', 'failure-1', 'failure-2', 'failure-2']);
     });
 
-    it('stops when retryIf returns false', async function () {
+    it('stops when retryPredicate returns false', async function () {
       const failure = new Error('permanent');
       class Subject {
         calls = 0;
-        @ExecutionPolicy.retryable({ maxAttempts: 3, retryIf: () => false })
+        @ExecutionPolicy.retryable({
+          maxAttempts: 3,
+          retryPredicate: () => false,
+        })
         async run(): Promise<void> {
           this.calls += 1;
           throw failure;
@@ -104,12 +122,12 @@ describe('ExecutionPolicy', function () {
     });
 
     it('accepts a predicate component', async function () {
-      const retryIf = {
+      const retryPredicate = {
         test: sinon.stub().onFirstCall().returns(true).returns(false),
       };
       class Subject {
         calls = 0;
-        @ExecutionPolicy.retryable({ maxAttempts: 3, retryIf })
+        @ExecutionPolicy.retryable({ maxAttempts: 3, retryPredicate })
         async run(): Promise<void> {
           this.calls += 1;
           throw new Error(`failure-${this.calls}`);
@@ -118,9 +136,11 @@ describe('ExecutionPolicy', function () {
       const subject = new Subject();
       await expect(subject.run()).to.be.rejectedWith('failure-2');
       expect(subject.calls).to.equal(2);
-      expect(retryIf.test).to.have.been.calledTwice;
-      expect(retryIf.test.firstCall.firstArg).to.include({ attempt: 1 });
-      expect(retryIf.test.secondCall.firstArg).to.include({ attempt: 2 });
+      expect(retryPredicate.test).to.have.been.calledTwice;
+      expect(retryPredicate.test.firstCall.firstArg).to.include({ attempt: 1 });
+      expect(retryPredicate.test.secondCall.firstArg).to.include({
+        attempt: 2,
+      });
     });
 
     it('waits for a fixed delay only before retrying', async function () {
@@ -144,6 +164,25 @@ describe('ExecutionPolicy', function () {
       } finally {
         clock.restore();
       }
+    });
+
+    it('accepts a delay provider component in preference to a fixed delay', async function () {
+      const delayProvider = { get: sinon.stub().returns(0) };
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.retryable({
+          maxAttempts: 2,
+          delay: 100,
+          delayProvider,
+        })
+        async run(): Promise<number> {
+          if (++this.calls === 1) throw new Error('temporary');
+          return this.calls;
+        }
+      }
+      expect(await new Subject().run()).to.equal(2);
+      expect(delayProvider.get).to.have.been.calledOnce;
+      expect(delayProvider.get.firstCall.firstArg).to.include({ attempt: 1 });
     });
 
     it('rejects invalid maxAttempts values', function () {
@@ -177,7 +216,10 @@ describe('ExecutionPolicy', function () {
 
     it('rejects an invalid computed delay', async function () {
       class Subject {
-        @ExecutionPolicy.retryable({ maxAttempts: 2, delay: () => -1 })
+        @ExecutionPolicy.retryable({
+          maxAttempts: 2,
+          delayProvider: () => -1,
+        })
         async run(): Promise<void> {
           throw new Error('temporary');
         }
@@ -206,6 +248,21 @@ describe('ExecutionPolicy', function () {
   });
 
   describe('shared', function () {
+    it('can be applied directly as a bound policy method', async function () {
+      const policy = new SharedExecutionPolicy();
+      class Subject {
+        calls = 0;
+        @policy.wrap.bind(policy)
+        async run(): Promise<number> {
+          return ++this.calls;
+        }
+      }
+      const subject = new Subject();
+      expect(await Promise.all([subject.run(), subject.run()])).to.deep.equal([
+        1, 1,
+      ]);
+    });
+
     it('shares the first in-flight call regardless of arguments', async function () {
       let release!: () => void;
       const gate = new Promise<void>(resolve => {
@@ -270,11 +327,11 @@ describe('ExecutionPolicy', function () {
 
   describe('composition', function () {
     it('shares an entire retry sequence when shared is outermost', async function () {
-      const retryIf = sinon.stub().returns(true);
+      const retryPredicate = sinon.stub().returns(true);
       class Subject {
         calls = 0;
         @ExecutionPolicy.shared()
-        @ExecutionPolicy.retryable({ maxAttempts: 2, retryIf })
+        @ExecutionPolicy.retryable({ maxAttempts: 2, retryPredicate })
         async run(): Promise<number> {
           this.calls += 1;
           if (this.calls === 1) throw new Error('temporary');
@@ -286,18 +343,18 @@ describe('ExecutionPolicy', function () {
         2, 2,
       ]);
       expect(subject.calls).to.equal(2);
-      expect(retryIf).to.have.been.calledOnce;
+      expect(retryPredicate).to.have.been.calledOnce;
     });
 
     it('runs retry sequences outside shared attempts in reverse order', async function () {
-      const retryIf = sinon.stub().returns(true);
+      const retryPredicate = sinon.stub().returns(true);
       let release!: () => void;
       const gate = new Promise<void>(resolve => {
         release = resolve;
       });
       class Subject {
         calls = 0;
-        @ExecutionPolicy.retryable({ maxAttempts: 2, retryIf })
+        @ExecutionPolicy.retryable({ maxAttempts: 2, retryPredicate })
         @ExecutionPolicy.shared()
         async run(): Promise<number> {
           this.calls += 1;
@@ -314,7 +371,7 @@ describe('ExecutionPolicy', function () {
       release();
       expect(await Promise.all([first, second])).to.deep.equal([2, 2]);
       expect(subject.calls).to.equal(2);
-      expect(retryIf).to.have.been.calledTwice;
+      expect(retryPredicate).to.have.been.calledTwice;
     });
   });
 });

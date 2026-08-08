@@ -1,4 +1,5 @@
 import { PredicateComponent } from '../types/predicate.js';
+import { ProviderComponent } from '../types/provider.js';
 
 /** An asynchronous method with a typed receiver, arguments, and result. */
 export type AsyncMethod<
@@ -28,14 +29,6 @@ export type RetryExecutionContext = Readonly<{
   maxAttempts: number;
 }>;
 
-/**
- * A fixed delay in milliseconds or a callback that computes one from the
- * current retry context. The callback may be synchronous or asynchronous.
- */
-export type RetryDelay =
-  | number
-  | ((context: RetryExecutionContext) => number | PromiseLike<number>);
-
 /** A predicate component that determines whether an execution should retry. */
 export type RetryPredicate = PredicateComponent<RetryExecutionContext>;
 
@@ -47,9 +40,14 @@ export type RetryableExecutionPolicyOptions = {
    */
   maxAttempts: number;
   /** The delay before an eligible retry. Defaults to zero milliseconds. */
-  delay?: RetryDelay;
+  delay?: number;
+  /**
+   * Provides the delay before an eligible retry from its failure context.
+   * Takes precedence over `delay` when both are supplied.
+   */
+  delayProvider?: ProviderComponent<number, RetryExecutionContext>;
   /** Determines which failures are retryable. All failures retry by default. */
-  retryIf?: RetryPredicate;
+  retryPredicate?: RetryPredicate;
 };
 
 /**

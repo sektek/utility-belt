@@ -13,8 +13,8 @@ class ResourceLoader {
   @ExecutionPolicy.shared({})
   @ExecutionPolicy.retryable({
     maxAttempts: 3,
-    delay: ({ attempt }) => attempt * 100,
-    retryIf: ({ error }) => error instanceof Error,
+    delayProvider: ({ attempt }) => attempt * 100,
+    retryPredicate: ({ error }) => error instanceof Error,
   })
   async load(): Promise<string> {
     return 'resource';

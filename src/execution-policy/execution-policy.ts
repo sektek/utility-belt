@@ -3,8 +3,8 @@ import {
   RetryableExecutionPolicyOptions,
   SharedExecutionPolicyOptions,
 } from './types.js';
-import { createRetryableExecutionPolicy } from './retryable-execution-policy.js';
-import { createSharedExecutionPolicy } from './shared-execution-policy.js';
+import { RetryableExecutionPolicy } from './retryable-execution-policy.js';
+import { SharedExecutionPolicy } from './shared-execution-policy.js';
 
 /**
  * Decorator factories for controlling asynchronous method execution.
@@ -21,7 +21,7 @@ export class ExecutionPolicy {
    *
    * The original receiver and arguments are reused for every attempt. The
    * final failure is propagated unchanged when no attempts remain or when
-   * `retryIf` returns `false`.
+   * `retryPredicate` returns `false`.
    *
    * @param opts - Retry count, delay, and failure-filtering options.
    * @returns A decorator for an asynchronous method.
@@ -30,7 +30,8 @@ export class ExecutionPolicy {
   static retryable(
     opts: RetryableExecutionPolicyOptions,
   ): AsyncMethodDecorator {
-    return createRetryableExecutionPolicy(opts);
+    const policy = new RetryableExecutionPolicy(opts);
+    return policy.wrap.bind(policy);
   }
 
   /**
@@ -46,6 +47,7 @@ export class ExecutionPolicy {
    * @throws {TypeError} If the reserved options object contains any fields.
    */
   static shared(opts: SharedExecutionPolicyOptions = {}): AsyncMethodDecorator {
-    return createSharedExecutionPolicy(opts);
+    const policy = new SharedExecutionPolicy(opts);
+    return policy.wrap.bind(policy);
   }
 }
