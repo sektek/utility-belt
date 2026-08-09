@@ -3,6 +3,7 @@ import {
   type RetryExecutionContext,
   RetryableExecutionPolicy,
   SharedExecutionPolicy,
+  SingleExecutionPolicy,
 } from './execution-policy/index.js';
 import { expect } from 'chai';
 import sinon from 'sinon';
@@ -322,6 +323,182 @@ describe('ExecutionPolicy', function () {
       expect(await Promise.all([first.run(), second.run()])).to.deep.equal([
         1, 1,
       ]);
+    });
+
+    it('shares executions by key when a keyProvider is supplied', async function () {
+      let releaseA!: () => void;
+      const gateA = new Promise<void>(resolve => {
+        releaseA = resolve;
+      });
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.shared({ keyProvider: ({ args }) => args[0] })
+        async run(shard: string): Promise<string> {
+          this.calls += 1;
+          if (shard === 'a') await gateA;
+          return shard;
+        }
+      }
+      const subject = new Subject();
+      const a1 = subject.run('a');
+      const a2 = subject.run('a');
+      const b1 = subject.run('b');
+      expect(a2).to.equal(a1);
+      expect(b1).to.not.equal(a1);
+      expect(subject.calls).to.equal(2);
+      releaseA();
+      expect(await Promise.all([a1, a2, b1])).to.deep.equal(['a', 'a', 'b']);
+    });
+
+    it('shares one execution for an asynchronous keyProvider', async function () {
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.shared({
+          keyProvider: async ({ args }) => args[0],
+        })
+        async run(shard: string): Promise<string> {
+          this.calls += 1;
+          return shard;
+        }
+      }
+      const subject = new Subject();
+      const [first, second] = await Promise.all([
+        subject.run('a'),
+        subject.run('a'),
+      ]);
+      expect(first).to.equal('a');
+      expect(second).to.equal('a');
+      expect(subject.calls).to.equal(1);
+    });
+  });
+
+  describe('single', function () {
+    it('can be applied directly as a bound policy method', async function () {
+      const policy = new SingleExecutionPolicy();
+      class Subject {
+        calls = 0;
+        @policy.wrap.bind(policy)
+        async run(): Promise<number> {
+          return ++this.calls;
+        }
+      }
+      const subject = new Subject();
+      expect(await Promise.all([subject.run(), subject.run()])).to.deep.equal([
+        1, 1,
+      ]);
+    });
+
+    it('shares the first in-flight call regardless of arguments', async function () {
+      let release!: () => void;
+      const gate = new Promise<void>(resolve => {
+        release = resolve;
+      });
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.single()
+        async run(value: string): Promise<string> {
+          this.calls += 1;
+          await gate;
+          return value;
+        }
+      }
+      const subject = new Subject();
+      const first = subject.run('first');
+      const second = subject.run('second');
+      expect(second).to.equal(first);
+      expect(subject.calls).to.equal(1);
+      release();
+      expect(await Promise.all([first, second])).to.deep.equal([
+        'first',
+        'first',
+      ]);
+    });
+
+    it('retains a successful execution and never invokes the method again', async function () {
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.single()
+        async run(): Promise<number> {
+          return ++this.calls;
+        }
+      }
+      const subject = new Subject();
+      expect(await subject.run()).to.equal(1);
+      expect(await subject.run()).to.equal(1);
+      expect(await subject.run()).to.equal(1);
+      expect(subject.calls).to.equal(1);
+    });
+
+    it('clears a failed execution so the next call retries', async function () {
+      const failure = new Error('first call failed');
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.single()
+        async run(): Promise<number> {
+          this.calls += 1;
+          if (this.calls === 1) throw failure;
+          return this.calls;
+        }
+      }
+      const subject = new Subject();
+      await expect(subject.run()).to.be.rejectedWith(failure);
+      expect(await subject.run()).to.equal(2);
+      expect(await subject.run()).to.equal(2);
+    });
+
+    it('isolates executions by object instance', async function () {
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.single()
+        async run(): Promise<number> {
+          return ++this.calls;
+        }
+      }
+      const first = new Subject();
+      const second = new Subject();
+      expect(await first.run()).to.equal(1);
+      expect(await second.run()).to.equal(1);
+    });
+
+    it('retains executions independently by key', async function () {
+      class Subject {
+        calls = 0;
+        connections: Record<string, number> = {};
+        @ExecutionPolicy.single({ keyProvider: ({ args }) => args[0] })
+        async run(shard: string): Promise<number> {
+          this.calls += 1;
+          this.connections[shard] = this.calls;
+          return this.connections[shard];
+        }
+      }
+      const subject = new Subject();
+      expect(await subject.run('a')).to.equal(1);
+      expect(await subject.run('b')).to.equal(2);
+      expect(await subject.run('a')).to.equal(1);
+      expect(await subject.run('b')).to.equal(2);
+      expect(subject.calls).to.equal(2);
+    });
+
+    it('shares and retains one execution for an asynchronous keyProvider', async function () {
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.single({
+          keyProvider: async ({ args }) => args[0],
+        })
+        async run(shard: string): Promise<string> {
+          this.calls += 1;
+          return shard;
+        }
+      }
+      const subject = new Subject();
+      const [first, second] = await Promise.all([
+        subject.run('a'),
+        subject.run('a'),
+      ]);
+      expect(first).to.equal('a');
+      expect(second).to.equal('a');
+      expect(await subject.run('a')).to.equal('a');
+      expect(subject.calls).to.equal(1);
     });
   });
 

@@ -9,22 +9,23 @@ import { decorateSharedMethod } from './shared-method.js';
 import { getComponent } from '../get-component.js';
 
 /** The coalescing key used when no `keyProvider` is supplied. */
-const DEFAULT_KEY = Symbol('SharedExecutionPolicy.defaultKey');
+const DEFAULT_KEY = Symbol('SingleExecutionPolicy.defaultKey');
 
 /**
- * Decorates asynchronous methods to share in-flight executions.
+ * Decorates asynchronous methods so each receiver and key executes the
+ * method at most once and shares the outcome with every caller.
  *
- * Concurrent calls on the same receiver and key reuse the same execution.
- * The recorded execution is always cleared once it settles, whether it
- * fulfills or rejects, so the next call — even immediately after — starts a
- * new execution. For an execution that stays shared with future callers
- * after it succeeds, see {@link SingleExecutionPolicy}.
+ * Concurrent calls on the same receiver and key reuse the same execution,
+ * as with {@link SharedExecutionPolicy}. Once that execution succeeds, it
+ * stays recorded and every later call — concurrent or not — receives the
+ * same resolved value without invoking the method again. A rejected
+ * execution is cleared instead, so the next call retries.
  */
-export class SharedExecutionPolicy {
+export class SingleExecutionPolicy {
   #keyProvider: ProviderFn<unknown, SharedExecutionContext>;
 
   /**
-   * Creates a shared execution policy.
+   * Creates a single execution policy.
    *
    * @param opts - Coalescing-key options.
    */
@@ -36,8 +37,8 @@ export class SharedExecutionPolicy {
   }
 
   /**
-   * Decorates an asynchronous method to share executions per receiver and
-   * key.
+   * Decorates an asynchronous method so it executes at most once per
+   * receiver and key.
    *
    * @template T - The method receiver type.
    * @template A - The method argument tuple.
@@ -53,7 +54,10 @@ export class SharedExecutionPolicy {
     descriptor: TypedPropertyDescriptor<AsyncMethod<T, A, R>>,
   ): TypedPropertyDescriptor<AsyncMethod<T, A, R>> | void {
     return decorateAsyncMethod(
-      decorateSharedMethod(this.#keyProvider.bind(this), () => false),
+      decorateSharedMethod(
+        this.#keyProvider.bind(this),
+        outcome => outcome === 'fulfilled',
+      ),
     )(target, propertyKey, descriptor);
   }
 }

@@ -51,9 +51,39 @@ export type RetryableExecutionPolicyOptions = {
 };
 
 /**
- * Options for {@link ExecutionPolicy.shared}.
- *
- * This type is intentionally empty in the initial implementation. It is
- * reserved for future keyed coalescing options.
+ * Information about a method invocation supplied to a shared execution
+ * policy's key provider.
  */
-export type SharedExecutionPolicyOptions = Record<string, never>;
+export type SharedExecutionContext = Readonly<{
+  /** The arguments supplied to the invocation. */
+  args: unknown[];
+}>;
+
+/**
+ * A provider component that computes the key used to share an execution
+ * with concurrent callers.
+ *
+ * May be synchronous or asynchronous. Two invocations that compute the
+ * same key (compared as a `Map` key) on the same receiver share one
+ * execution; all others execute independently. A synchronous key preserves
+ * the exact same Promise reference for every caller sharing an execution;
+ * an asynchronous key still guarantees a single execution and an
+ * equal-valued result for every caller, but each caller receives its own
+ * Promise wrapper rather than a literal shared reference, since the key
+ * must be awaited before the policy can decide whether to join an
+ * existing execution.
+ */
+export type SharedExecutionKeyProvider = ProviderComponent<
+  unknown,
+  SharedExecutionContext
+>;
+
+/** Options shared by {@link ExecutionPolicy.shared} and {@link ExecutionPolicy.single}. */
+export type SharedExecutionPolicyOptions = {
+  /**
+   * Computes the key used to share an invocation with concurrent callers
+   * on the same receiver. Defaults to a single fixed key, so all
+   * concurrent calls on a receiver share regardless of arguments.
+   */
+  keyProvider?: SharedExecutionKeyProvider;
+};
