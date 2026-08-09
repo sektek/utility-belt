@@ -1,9 +1,10 @@
 import {
   ExecutionPolicy,
+  MemoizeExecutionPolicy,
   type RetryExecutionContext,
   RetryableExecutionPolicy,
   SharedExecutionPolicy,
-  SingleExecutionPolicy,
+  singleKeyProvider,
 } from './execution-policy/index.js';
 import { expect } from 'chai';
 import sinon from 'sinon';
@@ -372,9 +373,9 @@ describe('ExecutionPolicy', function () {
     });
   });
 
-  describe('single', function () {
+  describe('memoize', function () {
     it('can be applied directly as a bound policy method', async function () {
-      const policy = new SingleExecutionPolicy();
+      const policy = new MemoizeExecutionPolicy();
       class Subject {
         calls = 0;
         @policy.wrap.bind(policy)
@@ -388,14 +389,14 @@ describe('ExecutionPolicy', function () {
       ]);
     });
 
-    it('shares the first in-flight call regardless of arguments', async function () {
+    it('shares the first in-flight call for the same first argument', async function () {
       let release!: () => void;
       const gate = new Promise<void>(resolve => {
         release = resolve;
       });
       class Subject {
         calls = 0;
-        @ExecutionPolicy.single()
+        @ExecutionPolicy.memoize()
         async run(value: string): Promise<string> {
           this.calls += 1;
           await gate;
@@ -403,21 +404,37 @@ describe('ExecutionPolicy', function () {
         }
       }
       const subject = new Subject();
-      const first = subject.run('first');
-      const second = subject.run('second');
+      const first = subject.run('shared');
+      const second = subject.run('shared');
       expect(second).to.equal(first);
       expect(subject.calls).to.equal(1);
       release();
       expect(await Promise.all([first, second])).to.deep.equal([
-        'first',
-        'first',
+        'shared',
+        'shared',
       ]);
+    });
+
+    it('does not share across different first arguments by default', async function () {
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.memoize()
+        async run(value: string): Promise<string> {
+          this.calls += 1;
+          return value;
+        }
+      }
+      const subject = new Subject();
+      expect(
+        await Promise.all([subject.run('a'), subject.run('b')]),
+      ).to.deep.equal(['a', 'b']);
+      expect(subject.calls).to.equal(2);
     });
 
     it('retains a successful execution and never invokes the method again', async function () {
       class Subject {
         calls = 0;
-        @ExecutionPolicy.single()
+        @ExecutionPolicy.memoize()
         async run(): Promise<number> {
           return ++this.calls;
         }
@@ -433,7 +450,7 @@ describe('ExecutionPolicy', function () {
       const failure = new Error('first call failed');
       class Subject {
         calls = 0;
-        @ExecutionPolicy.single()
+        @ExecutionPolicy.memoize()
         async run(): Promise<number> {
           this.calls += 1;
           if (this.calls === 1) throw failure;
@@ -449,7 +466,7 @@ describe('ExecutionPolicy', function () {
     it('isolates executions by object instance', async function () {
       class Subject {
         calls = 0;
-        @ExecutionPolicy.single()
+        @ExecutionPolicy.memoize()
         async run(): Promise<number> {
           return ++this.calls;
         }
@@ -460,11 +477,11 @@ describe('ExecutionPolicy', function () {
       expect(await second.run()).to.equal(1);
     });
 
-    it('retains executions independently by key', async function () {
+    it('retains executions independently by first argument by default', async function () {
       class Subject {
         calls = 0;
         connections: Record<string, number> = {};
-        @ExecutionPolicy.single({ keyProvider: ({ args }) => args[0] })
+        @ExecutionPolicy.memoize()
         async run(shard: string): Promise<number> {
           this.calls += 1;
           this.connections[shard] = this.calls;
@@ -482,7 +499,7 @@ describe('ExecutionPolicy', function () {
     it('shares and retains one execution for an asynchronous keyProvider', async function () {
       class Subject {
         calls = 0;
-        @ExecutionPolicy.single({
+        @ExecutionPolicy.memoize({
           keyProvider: async ({ args }) => args[0],
         })
         async run(shard: string): Promise<string> {
@@ -498,6 +515,21 @@ describe('ExecutionPolicy', function () {
       expect(first).to.equal('a');
       expect(second).to.equal('a');
       expect(await subject.run('a')).to.equal('a');
+      expect(subject.calls).to.equal(1);
+    });
+
+    it('memoizes the whole method when given singleKeyProvider', async function () {
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.memoize({ keyProvider: singleKeyProvider })
+        async run(value: string): Promise<string> {
+          this.calls += 1;
+          return value;
+        }
+      }
+      const subject = new Subject();
+      expect(await subject.run('a')).to.equal('a');
+      expect(await subject.run('b')).to.equal('a');
       expect(subject.calls).to.equal(1);
     });
   });

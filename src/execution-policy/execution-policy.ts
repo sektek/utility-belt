@@ -3,9 +3,9 @@ import {
   RetryableExecutionPolicyOptions,
   SharedExecutionPolicyOptions,
 } from './types.js';
+import { MemoizeExecutionPolicy } from './memoize-execution-policy.js';
 import { RetryableExecutionPolicy } from './retryable-execution-policy.js';
 import { SharedExecutionPolicy } from './shared-execution-policy.js';
-import { SingleExecutionPolicy } from './single-execution-policy.js';
 
 /**
  * Decorator factories for controlling asynchronous method execution.
@@ -39,12 +39,14 @@ export class ExecutionPolicy {
    * Creates a decorator that shares one execution per receiver and key with
    * concurrent callers.
    *
-   * Concurrent calls on the same receiver and key — a single fixed key by
-   * default, so all concurrent calls share regardless of arguments — reuse
-   * the same execution and its outcome. That execution is cleared once it
-   * settles, whether it fulfills or rejects, so the next call starts a new
-   * execution. For an execution that keeps being shared with future callers
-   * after it succeeds, see {@link ExecutionPolicy.single}.
+   * Concurrent calls on the same receiver and key reuse the same execution
+   * and its outcome. That execution is cleared once it settles, whether it
+   * fulfills or rejects, so the next call starts a new execution. For an
+   * execution that keeps being shared with future callers after it
+   * succeeds, see {@link ExecutionPolicy.memoize}.
+   *
+   * Defaults to `singleKeyProvider`, so all concurrent calls share
+   * regardless of arguments.
    *
    * @param opts - Coalescing-key options.
    * @returns A decorator for an asynchronous method.
@@ -64,11 +66,18 @@ export class ExecutionPolicy {
    * same resolved value without invoking the method again. A rejected
    * execution is cleared instead, so the next call retries.
    *
+   * Defaults to `firstArgumentKeyProvider`, so calls are memoized per first
+   * argument — a method with no arguments therefore behaves like a
+   * singleton. Pass `keyProvider: singleKeyProvider` to memoize the whole
+   * method regardless of arguments instead.
+   *
    * @param opts - Coalescing-key options.
    * @returns A decorator for an asynchronous method.
    */
-  static single(opts: SharedExecutionPolicyOptions = {}): AsyncMethodDecorator {
-    const policy = new SingleExecutionPolicy(opts);
+  static memoize(
+    opts: SharedExecutionPolicyOptions = {},
+  ): AsyncMethodDecorator {
+    const policy = new MemoizeExecutionPolicy(opts);
     return policy.wrap.bind(policy);
   }
 }

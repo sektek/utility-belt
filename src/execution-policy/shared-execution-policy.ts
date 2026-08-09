@@ -7,9 +7,7 @@ import { ProviderFn } from '../types/provider.js';
 import { decorateAsyncMethod } from './async-method.js';
 import { decorateSharedMethod } from './shared-method.js';
 import { getComponent } from '../get-component.js';
-
-/** The coalescing key used when no `keyProvider` is supplied. */
-const DEFAULT_KEY = Symbol('SharedExecutionPolicy.defaultKey');
+import { singleKeyProvider } from './key-providers.js';
 
 /**
  * Decorates asynchronous methods to share in-flight executions.
@@ -18,7 +16,10 @@ const DEFAULT_KEY = Symbol('SharedExecutionPolicy.defaultKey');
  * The recorded execution is always cleared once it settles, whether it
  * fulfills or rejects, so the next call — even immediately after — starts a
  * new execution. For an execution that stays shared with future callers
- * after it succeeds, see {@link SingleExecutionPolicy}.
+ * after it succeeds, see {@link MemoizeExecutionPolicy}.
+ *
+ * Defaults to `singleKeyProvider`, so all concurrent calls on a receiver
+ * share regardless of arguments.
  */
 export class SharedExecutionPolicy {
   #keyProvider: ProviderFn<unknown, SharedExecutionContext>;
@@ -31,7 +32,7 @@ export class SharedExecutionPolicy {
   constructor(opts: SharedExecutionPolicyOptions = {}) {
     this.#keyProvider = getComponent(opts.keyProvider, 'get', {
       name: 'keyProvider',
-      default: () => DEFAULT_KEY,
+      default: singleKeyProvider,
     });
   }
 

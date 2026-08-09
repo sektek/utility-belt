@@ -6,10 +6,8 @@ import {
 import { ProviderFn } from '../types/provider.js';
 import { decorateAsyncMethod } from './async-method.js';
 import { decorateSharedMethod } from './shared-method.js';
+import { firstArgumentKeyProvider } from './key-providers.js';
 import { getComponent } from '../get-component.js';
-
-/** The coalescing key used when no `keyProvider` is supplied. */
-const DEFAULT_KEY = Symbol('SingleExecutionPolicy.defaultKey');
 
 /**
  * Decorates asynchronous methods so each receiver and key executes the
@@ -20,19 +18,23 @@ const DEFAULT_KEY = Symbol('SingleExecutionPolicy.defaultKey');
  * stays recorded and every later call — concurrent or not — receives the
  * same resolved value without invoking the method again. A rejected
  * execution is cleared instead, so the next call retries.
+ *
+ * Defaults to `firstArgumentKeyProvider`, so calls are memoized per first
+ * argument. Pass `keyProvider: singleKeyProvider` for singleton behavior —
+ * one retained execution per receiver regardless of arguments.
  */
-export class SingleExecutionPolicy {
+export class MemoizeExecutionPolicy {
   #keyProvider: ProviderFn<unknown, SharedExecutionContext>;
 
   /**
-   * Creates a single execution policy.
+   * Creates a memoize execution policy.
    *
    * @param opts - Coalescing-key options.
    */
   constructor(opts: SharedExecutionPolicyOptions = {}) {
     this.#keyProvider = getComponent(opts.keyProvider, 'get', {
       name: 'keyProvider',
-      default: () => DEFAULT_KEY,
+      default: firstArgumentKeyProvider,
     });
   }
 

@@ -18,7 +18,7 @@ export type SettlementOutcome = 'fulfilled' | 'rejected';
  * `retain` decides whether it stays recorded for future calls to reuse or
  * is cleared so the next call executes again. This is the shared mechanism
  * behind both `SharedExecutionPolicy` (always clears) and
- * `SingleExecutionPolicy` (clears only on rejection).
+ * `MemoizeExecutionPolicy` (clears only on rejection).
  *
  * When `keyProvider` resolves synchronously, concurrent callers that share
  * an execution receive the exact same Promise instance. When it resolves
