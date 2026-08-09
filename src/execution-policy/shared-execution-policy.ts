@@ -20,16 +20,22 @@ import { singleKeyProvider } from './key-providers.js';
  *
  * Defaults to `singleKeyProvider`, so all concurrent calls on a receiver
  * share regardless of arguments.
+ *
+ * @template KeyArgs - The decorated method's argument tuple, used to type
+ *   `keyProvider`'s `args`. Defaults to `unknown[]`; supply it explicitly
+ *   (e.g. `new SharedExecutionPolicy<[Event]>(...)`, or via
+ *   `ExecutionPolicy.shared<[Event]>(...)`) to type a custom `keyProvider`
+ *   against the method's real parameters instead of casting inside it.
  */
-export class SharedExecutionPolicy {
-  #keyProvider: ProviderFn<unknown, SharedExecutionContext>;
+export class SharedExecutionPolicy<KeyArgs extends unknown[] = unknown[]> {
+  #keyProvider: ProviderFn<unknown, SharedExecutionContext<KeyArgs>>;
 
   /**
    * Creates a shared execution policy.
    *
    * @param opts - Coalescing-key options.
    */
-  constructor(opts: SharedExecutionPolicyOptions = {}) {
+  constructor(opts: SharedExecutionPolicyOptions<KeyArgs> = {}) {
     this.#keyProvider = getComponent(opts.keyProvider, 'get', {
       name: 'keyProvider',
       default: singleKeyProvider,
@@ -54,7 +60,13 @@ export class SharedExecutionPolicy {
     descriptor: TypedPropertyDescriptor<AsyncMethod<T, A, R>>,
   ): TypedPropertyDescriptor<AsyncMethod<T, A, R>> | void {
     return decorateAsyncMethod(
-      decorateSharedMethod(this.#keyProvider.bind(this), () => false),
+      decorateSharedMethod(
+        this.#keyProvider.bind(this) as ProviderFn<
+          unknown,
+          SharedExecutionContext
+        >,
+        () => false,
+      ),
     )(target, propertyKey, descriptor);
   }
 }

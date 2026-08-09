@@ -22,16 +22,22 @@ import { getComponent } from '../get-component.js';
  * Defaults to `firstArgumentKeyProvider`, so calls are memoized per first
  * argument. Pass `keyProvider: singleKeyProvider` for singleton behavior —
  * one retained execution per receiver regardless of arguments.
+ *
+ * @template KeyArgs - The decorated method's argument tuple, used to type
+ *   `keyProvider`'s `args`. Defaults to `unknown[]`; supply it explicitly
+ *   (e.g. `new MemoizeExecutionPolicy<[Event]>(...)`, or via
+ *   `ExecutionPolicy.memoize<[Event]>(...)`) to type a custom `keyProvider`
+ *   against the method's real parameters instead of casting inside it.
  */
-export class MemoizeExecutionPolicy {
-  #keyProvider: ProviderFn<unknown, SharedExecutionContext>;
+export class MemoizeExecutionPolicy<KeyArgs extends unknown[] = unknown[]> {
+  #keyProvider: ProviderFn<unknown, SharedExecutionContext<KeyArgs>>;
 
   /**
    * Creates a memoize execution policy.
    *
    * @param opts - Coalescing-key options.
    */
-  constructor(opts: SharedExecutionPolicyOptions = {}) {
+  constructor(opts: SharedExecutionPolicyOptions<KeyArgs> = {}) {
     this.#keyProvider = getComponent(opts.keyProvider, 'get', {
       name: 'keyProvider',
       default: firstArgumentKeyProvider,
@@ -57,7 +63,10 @@ export class MemoizeExecutionPolicy {
   ): TypedPropertyDescriptor<AsyncMethod<T, A, R>> | void {
     return decorateAsyncMethod(
       decorateSharedMethod(
-        this.#keyProvider.bind(this),
+        this.#keyProvider.bind(this) as ProviderFn<
+          unknown,
+          SharedExecutionContext
+        >,
         outcome => outcome === 'fulfilled',
       ),
     )(target, propertyKey, descriptor);

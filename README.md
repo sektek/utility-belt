@@ -74,6 +74,22 @@ caller, but each caller gets its own Promise wrapper rather than a shared
 reference, since the key has to be awaited before the policy can decide
 whether an invocation joins an existing execution.
 
+`shared` and `memoize` are called before the decorated method is known, so
+`keyProvider`'s `args` can't be inferred from it automatically — by default
+it's typed `unknown[]`. Supply the method's argument tuple explicitly to
+type `args` against it instead of casting inside `keyProvider`:
+
+```ts
+class EventHandler {
+  @ExecutionPolicy.memoize<[UserEvent]>({
+    keyProvider: ({ args: [event] }) => event.userId, // event: UserEvent, not unknown
+  })
+  async handle(event: UserEvent): Promise<void> {
+    /* ... */
+  }
+}
+```
+
 ## Installation
 
 ```sh

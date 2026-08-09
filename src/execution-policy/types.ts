@@ -53,10 +53,16 @@ export type RetryableExecutionPolicyOptions = {
 /**
  * Information about a method invocation supplied to a shared execution
  * policy's key provider.
+ *
+ * @template A - The decorated method's argument tuple. Defaults to
+ *   `unknown[]`; supply it explicitly (e.g.
+ *   `ExecutionPolicy.memoize<[Event]>(...)`) to type `args` as the actual
+ *   parameters of the method being decorated, rather than casting inside
+ *   `keyProvider`.
  */
-export type SharedExecutionContext = Readonly<{
+export type SharedExecutionContext<A extends unknown[] = unknown[]> = Readonly<{
   /** The arguments supplied to the invocation. */
-  args: unknown[];
+  args: A;
 }>;
 
 /**
@@ -72,18 +78,25 @@ export type SharedExecutionContext = Readonly<{
  * Promise wrapper rather than a literal shared reference, since the key
  * must be awaited before the policy can decide whether to join an
  * existing execution.
+ *
+ * @template A - The decorated method's argument tuple; see
+ *   {@link SharedExecutionContext}.
  */
-export type SharedExecutionKeyProvider = ProviderComponent<
-  unknown,
-  SharedExecutionContext
->;
+export type SharedExecutionKeyProvider<A extends unknown[] = unknown[]> =
+  ProviderComponent<unknown, SharedExecutionContext<A>>;
 
-/** Options shared by {@link ExecutionPolicy.shared} and {@link ExecutionPolicy.single}. */
-export type SharedExecutionPolicyOptions = {
+/**
+ * Options shared by {@link ExecutionPolicy.shared} and
+ * {@link ExecutionPolicy.memoize}.
+ *
+ * @template A - The decorated method's argument tuple, used to type
+ *   `keyProvider`'s `args`; see {@link SharedExecutionContext}.
+ */
+export type SharedExecutionPolicyOptions<A extends unknown[] = unknown[]> = {
   /**
    * Computes the key used to share an invocation with concurrent callers
    * on the same receiver. Defaults to a single fixed key, so all
    * concurrent calls on a receiver share regardless of arguments.
    */
-  keyProvider?: SharedExecutionKeyProvider;
+  keyProvider?: SharedExecutionKeyProvider<A>;
 };

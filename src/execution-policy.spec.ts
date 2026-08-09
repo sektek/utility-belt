@@ -532,6 +532,26 @@ describe('ExecutionPolicy', function () {
       expect(await subject.run('b')).to.equal('a');
       expect(subject.calls).to.equal(1);
     });
+
+    it('types keyProvider args from an explicit KeyArgs parameter, without casting', async function () {
+      type UserEvent = { userId: string };
+      class Subject {
+        calls = 0;
+        @ExecutionPolicy.memoize<[UserEvent]>({
+          // No cast needed: `event` below is typed as UserEvent, not unknown.
+          keyProvider: ({ args: [event] }) => event.userId,
+        })
+        async handle(event: UserEvent): Promise<string> {
+          this.calls += 1;
+          return event.userId;
+        }
+      }
+      const subject = new Subject();
+      expect(await subject.handle({ userId: 'u1' })).to.equal('u1');
+      expect(await subject.handle({ userId: 'u1' })).to.equal('u1');
+      expect(await subject.handle({ userId: 'u2' })).to.equal('u2');
+      expect(subject.calls).to.equal(2);
+    });
   });
 
   describe('composition', function () {

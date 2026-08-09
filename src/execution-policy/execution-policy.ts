@@ -48,10 +48,17 @@ export class ExecutionPolicy {
    * Defaults to `singleKeyProvider`, so all concurrent calls share
    * regardless of arguments.
    *
+   * @template KeyArgs - The decorated method's argument tuple, used to type
+   *   `opts.keyProvider`'s `args`. Defaults to `unknown[]`; supply it
+   *   explicitly (e.g. `ExecutionPolicy.shared<[Event]>(...)`) to type a
+   *   custom `keyProvider` against the method's real parameters instead of
+   *   casting inside it.
    * @param opts - Coalescing-key options.
    * @returns A decorator for an asynchronous method.
    */
-  static shared(opts: SharedExecutionPolicyOptions = {}): AsyncMethodDecorator {
+  static shared<KeyArgs extends unknown[] = unknown[]>(
+    opts: SharedExecutionPolicyOptions<KeyArgs> = {},
+  ): AsyncMethodDecorator {
     const policy = new SharedExecutionPolicy(opts);
     return policy.wrap.bind(policy);
   }
@@ -71,11 +78,16 @@ export class ExecutionPolicy {
    * singleton. Pass `keyProvider: singleKeyProvider` to memoize the whole
    * method regardless of arguments instead.
    *
+   * @template KeyArgs - The decorated method's argument tuple, used to type
+   *   `opts.keyProvider`'s `args`. Defaults to `unknown[]`; supply it
+   *   explicitly (e.g. `ExecutionPolicy.memoize<[Event]>(...)`) to type a
+   *   custom `keyProvider` against the method's real parameters instead of
+   *   casting inside it.
    * @param opts - Coalescing-key options.
    * @returns A decorator for an asynchronous method.
    */
-  static memoize(
-    opts: SharedExecutionPolicyOptions = {},
+  static memoize<KeyArgs extends unknown[] = unknown[]>(
+    opts: SharedExecutionPolicyOptions<KeyArgs> = {},
   ): AsyncMethodDecorator {
     const policy = new MemoizeExecutionPolicy(opts);
     return policy.wrap.bind(policy);
