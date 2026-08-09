@@ -1,21 +1,17 @@
+import { AnyAsyncMethod, invokeAsyncMethod } from './async-method.js';
 import {
-  AnyAsyncMethod,
-  decorateAsyncMethod,
-  invokeAsyncMethod,
-} from './async-method.js';
-import {
-  AsyncMethod,
   RetryExecutionContext,
   RetryPredicate,
   RetryableExecutionPolicyOptions,
 } from './types.js';
+import { AbstractExecutionPolicy } from './abstract-execution-policy.js';
 import { PredicateFn } from '../types/predicate.js';
 import { ProviderFn } from '../types/provider.js';
 import { getComponent } from '../get-component.js';
 import { sleep } from '../sleep.js';
 
 /** Decorates asynchronous methods with configurable retry behavior. */
-export class RetryableExecutionPolicy {
+export class RetryableExecutionPolicy extends AbstractExecutionPolicy {
   #delayProvider: ProviderFn<number, RetryExecutionContext>;
   #opts: RetryableExecutionPolicyOptions;
   #retryPredicate: PredicateFn<RetryExecutionContext> | undefined;
@@ -27,6 +23,7 @@ export class RetryableExecutionPolicy {
    * @throws {RangeError} If `maxAttempts` or a fixed delay is invalid.
    */
   constructor(opts: RetryableExecutionPolicyOptions) {
+    super();
     if (!Number.isSafeInteger(opts.maxAttempts) || opts.maxAttempts < 1) {
       throw new RangeError('maxAttempts must be a positive safe integer');
     }
@@ -48,28 +45,16 @@ export class RetryableExecutionPolicy {
   }
 
   /**
-   * Decorates an asynchronous method with this policy's retry behavior.
+   * Creates this policy's retry executor for a decorated method.
    *
-   * @template T - The method receiver type.
-   * @template A - The method argument tuple.
-   * @template R - The resolved method result type.
-   * @param target - The decorated method's target.
-   * @param propertyKey - The decorated method's property key.
-   * @param descriptor - The decorated method's property descriptor.
-   * @returns The updated property descriptor.
+   * @param method - The original decorated method, type-erased.
+   * @returns The function that replaces it.
    */
-  wrap<T, A extends unknown[], R>(
-    target: object,
-    propertyKey: string | symbol,
-    descriptor: TypedPropertyDescriptor<AsyncMethod<T, A, R>>,
-  ): TypedPropertyDescriptor<AsyncMethod<T, A, R>> | void {
+  protected createExecutor(method: AnyAsyncMethod): AnyAsyncMethod {
     const execute = this.#execute.bind(this);
-    return decorateAsyncMethod(
-      method =>
-        function (this: unknown, ...args: unknown[]) {
-          return execute(method, this, args);
-        },
-    )(target, propertyKey, descriptor);
+    return function (this: unknown, ...args: unknown[]) {
+      return execute(method, this, args);
+    };
   }
 
   async #execute(

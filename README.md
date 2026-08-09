@@ -93,6 +93,39 @@ class EventHandler {
 }
 ```
 
+### Writing a custom policy
+
+Every policy — including `retryable`, `shared`, and `memoize` — is a small
+class extending `AbstractExecutionPolicy`, which handles decorating the
+method; a policy only implements `createExecutor`, returning the function
+that replaces the method's implementation:
+
+```ts
+import { AbstractExecutionPolicy, type AnyAsyncMethod } from '@sektek/utility-belt';
+
+class LoggingExecutionPolicy extends AbstractExecutionPolicy {
+  protected createExecutor(method: AnyAsyncMethod): AnyAsyncMethod {
+    return function (this: unknown, ...args: unknown[]) {
+      console.log('calling', method.name, args);
+      return method.apply(this, args);
+    };
+  }
+}
+
+const loggingPolicy = new LoggingExecutionPolicy();
+class Subject {
+  @loggingPolicy.wrap.bind(loggingPolicy)
+  async run(): Promise<void> {
+    /* ... */
+  }
+}
+```
+
+`shared` and `memoize` are themselves built on a second base class,
+`AbstractSharedExecutionPolicy`, which handles resolving `keyProvider` and
+coalescing/retaining executions; a subclass only implements `retain`,
+deciding whether a settled execution stays recorded for future callers.
+
 ## Installation
 
 ```sh

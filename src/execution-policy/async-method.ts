@@ -1,4 +1,4 @@
-import { AsyncMethod, AsyncMethodDecorator } from './types.js';
+import { AsyncMethod } from './types.js';
 import { isPromiseLike } from '../is-promise-like.js';
 
 /** Type-erased asynchronous method used by policy implementations. */
@@ -29,23 +29,3 @@ export const invokeAsyncMethod = (
         new TypeError('ExecutionPolicy can only decorate asynchronous methods'),
       );
 };
-
-/**
- * Creates a typed decorator from a type-erased asynchronous method wrapper.
- *
- * @param wrap - Wraps the decorated asynchronous method.
- * @returns A typed asynchronous method decorator.
- */
-export const decorateAsyncMethod =
-  (wrap: (method: AnyAsyncMethod) => AnyAsyncMethod): AsyncMethodDecorator =>
-  (_target, propertyKey, descriptor) => {
-    if (!descriptor.value) {
-      throw new TypeError(
-        `ExecutionPolicy can only decorate methods (${String(propertyKey)})`,
-      );
-    }
-    descriptor.value = wrap(
-      descriptor.value as AnyAsyncMethod,
-    ) as typeof descriptor.value;
-    return descriptor;
-  };

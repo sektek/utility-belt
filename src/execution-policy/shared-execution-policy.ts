@@ -1,11 +1,5 @@
-import {
-  AsyncMethod,
-  SharedExecutionKeyProviderFn,
-  SharedExecutionPolicyOptions,
-} from './types.js';
-import { decorateAsyncMethod } from './async-method.js';
-import { decorateSharedMethod } from './shared-method.js';
-import { getComponent } from '../get-component.js';
+import { AbstractSharedExecutionPolicy } from './abstract-shared-execution-policy.js';
+import { SharedExecutionPolicyOptions } from './types.js';
 import { singleKeyProvider } from './key-providers.js';
 
 /**
@@ -26,43 +20,19 @@ import { singleKeyProvider } from './key-providers.js';
  *   `ExecutionPolicy.shared<[Event]>(...)`) to type a custom `keyProvider`
  *   against the method's real parameters instead of casting inside it.
  */
-export class SharedExecutionPolicy<KeyArgs extends unknown[] = unknown[]> {
-  #keyProvider: SharedExecutionKeyProviderFn<KeyArgs>;
-
+export class SharedExecutionPolicy<
+  KeyArgs extends unknown[] = unknown[],
+> extends AbstractSharedExecutionPolicy<KeyArgs> {
   /**
    * Creates a shared execution policy.
    *
    * @param opts - Coalescing-key options.
    */
   constructor(opts: SharedExecutionPolicyOptions<KeyArgs> = {}) {
-    this.#keyProvider = getComponent(opts.keyProvider, 'get', {
-      name: 'keyProvider',
-      default: singleKeyProvider,
-    });
+    super(opts, singleKeyProvider);
   }
 
-  /**
-   * Decorates an asynchronous method to share executions per receiver and
-   * key.
-   *
-   * @template T - The method receiver type.
-   * @template A - The method argument tuple.
-   * @template R - The resolved method result type.
-   * @param target - The decorated method's target.
-   * @param propertyKey - The decorated method's property key.
-   * @param descriptor - The decorated method's property descriptor.
-   * @returns The updated property descriptor.
-   */
-  wrap<T, A extends unknown[], R>(
-    target: object,
-    propertyKey: string | symbol,
-    descriptor: TypedPropertyDescriptor<AsyncMethod<T, A, R>>,
-  ): TypedPropertyDescriptor<AsyncMethod<T, A, R>> | void {
-    return decorateAsyncMethod(
-      decorateSharedMethod(
-        this.#keyProvider.bind(this) as SharedExecutionKeyProviderFn,
-        () => false,
-      ),
-    )(target, propertyKey, descriptor);
+  protected retain(): boolean {
+    return false;
   }
 }

@@ -1,16 +1,14 @@
 import { AnyAsyncMethod, invokeAsyncMethod } from './async-method.js';
-import { SharedExecutionKeyProviderFn } from './types.js';
+import { SettlementOutcome, SharedExecutionKeyProviderFn } from './types.js';
 import { isObject } from '../is-object.js';
 import { isPromiseLike } from '../is-promise-like.js';
-
-/** The outcome of a settled execution, supplied to a retention rule. */
-export type SettlementOutcome = 'fulfilled' | 'rejected';
 
 /**
  * Executes a decorated method so concurrent calls on the same receiver and
  * key share one execution.
  *
- * One instance is created per decorated method, so its recorded executions
+ * One instance is created per decorated method (by
+ * {@link AbstractSharedExecutionPolicy}), so its recorded executions
  * (`#executionsByReceiver`) never leak between two different methods that
  * happen to share a policy instance. The key is computed once per
  * invocation via `keyProvider`, which may be synchronous or asynchronous.
@@ -30,7 +28,7 @@ export type SettlementOutcome = 'fulfilled' | 'rejected';
  * must be awaited before the policy can decide whether to join an
  * existing execution.
  */
-class SharedMethodExecution {
+export class SharedMethodExecution {
   #method: AnyAsyncMethod;
   #keyProvider: SharedExecutionKeyProviderFn;
   #retain: (outcome: SettlementOutcome) => boolean;
@@ -109,23 +107,3 @@ class SharedMethodExecution {
     return promise;
   }
 }
-
-/**
- * Wraps an asynchronous method with a {@link SharedMethodExecution}.
- *
- * @param keyProvider - Computes the sharing key from an invocation's
- *   arguments.
- * @param retain - Determines whether a settled execution's entry is kept.
- * @returns A function that wraps an async method with shared execution.
- */
-export const decorateSharedMethod =
-  (
-    keyProvider: SharedExecutionKeyProviderFn,
-    retain: (outcome: SettlementOutcome) => boolean,
-  ) =>
-  (method: AnyAsyncMethod): AnyAsyncMethod => {
-    const execution = new SharedMethodExecution(method, keyProvider, retain);
-    return function (this: unknown, ...args: unknown[]): Promise<unknown> {
-      return execution.invoke(this, args);
-    };
-  };

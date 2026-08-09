@@ -1,4 +1,6 @@
 import {
+  AbstractExecutionPolicy,
+  type AnyAsyncMethod,
   ExecutionPolicy,
   MemoizeExecutionPolicy,
   type RetryExecutionContext,
@@ -601,6 +603,27 @@ describe('ExecutionPolicy', function () {
       expect(await Promise.all([first, second])).to.deep.equal([2, 2]);
       expect(subject.calls).to.equal(2);
       expect(retryPredicate).to.have.been.calledTwice;
+    });
+  });
+
+  describe('AbstractExecutionPolicy', function () {
+    it('supports a custom policy that only implements createExecutor', async function () {
+      class UppercasingExecutionPolicy extends AbstractExecutionPolicy {
+        protected createExecutor(method: AnyAsyncMethod): AnyAsyncMethod {
+          return async function (this: unknown, ...args: unknown[]) {
+            const result = await method.apply(this, args);
+            return typeof result === 'string' ? result.toUpperCase() : result;
+          };
+        }
+      }
+      const policy = new UppercasingExecutionPolicy();
+      class Subject {
+        @policy.wrap.bind(policy)
+        async run(value: string): Promise<string> {
+          return value;
+        }
+      }
+      expect(await new Subject().run('hi')).to.equal('HI');
     });
   });
 });

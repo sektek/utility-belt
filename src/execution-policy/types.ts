@@ -112,3 +112,9 @@ export type SharedExecutionPolicyOptions<A extends unknown[] = unknown[]> = {
    */
   keyProvider?: SharedExecutionKeyProvider<A>;
 };
+
+/**
+ * The outcome of a settled shared execution, supplied to
+ * {@link AbstractSharedExecutionPolicy}'s `retain` method.
+ */
+export type SettlementOutcome = 'fulfilled' | 'rejected';

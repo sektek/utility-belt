@@ -1,3 +1,6 @@
+export * from './abstract-execution-policy.js';
+export * from './abstract-shared-execution-policy.js';
+export * from './async-method.js';
 export * from './execution-policy.js';
 export * from './key-providers.js';
 export * from './memoize-execution-policy.js';
