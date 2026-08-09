@@ -1,4 +1,4 @@
-import { SettlementOutcome, SharedExecutionPolicyOptions } from './types.js';
+import { KeyedExecutionPolicyOptions, SettlementOutcome } from './types.js';
 import { AbstractSharedExecutionPolicy } from './abstract-shared-execution-policy.js';
 import { firstArgumentKeyProvider } from './key-providers.js';
 
@@ -30,7 +30,7 @@ export class MemoizeExecutionPolicy<
    *
    * @param opts - Coalescing-key options.
    */
-  constructor(opts: SharedExecutionPolicyOptions<KeyArgs> = {}) {
+  constructor(opts: KeyedExecutionPolicyOptions<KeyArgs> = {}) {
     super(opts, firstArgumentKeyProvider);
   }
 

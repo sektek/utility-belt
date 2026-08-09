@@ -1,7 +1,7 @@
 import {
+  KeyedExecutionPolicyOptions,
   SettlementOutcome,
   SharedExecutionKeyProviderFn,
-  SharedExecutionPolicyOptions,
 } from './types.js';
 import { AbstractExecutionPolicy } from './abstract-execution-policy.js';
 import { AnyAsyncMethod } from './async-method.js';
@@ -33,7 +33,7 @@ export abstract class AbstractSharedExecutionPolicy<
    *   `opts.keyProvider` is omitted.
    */
   constructor(
-    opts: SharedExecutionPolicyOptions<KeyArgs>,
+    opts: KeyedExecutionPolicyOptions<KeyArgs>,
     defaultKeyProvider: SharedExecutionKeyProviderFn,
   ) {
     super();

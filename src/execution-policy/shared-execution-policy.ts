@@ -1,5 +1,5 @@
 import { AbstractSharedExecutionPolicy } from './abstract-shared-execution-policy.js';
-import { SharedExecutionPolicyOptions } from './types.js';
+import { KeyedExecutionPolicyOptions } from './types.js';
 import { singleKeyProvider } from './key-providers.js';
 
 /**
@@ -28,7 +28,7 @@ export class SharedExecutionPolicy<
    *
    * @param opts - Coalescing-key options.
    */
-  constructor(opts: SharedExecutionPolicyOptions<KeyArgs> = {}) {
+  constructor(opts: KeyedExecutionPolicyOptions<KeyArgs> = {}) {
     super(opts, singleKeyProvider);
   }
 

@@ -1,7 +1,7 @@
 import {
   AsyncMethodDecorator,
+  KeyedExecutionPolicyOptions,
   RetryableExecutionPolicyOptions,
-  SharedExecutionPolicyOptions,
 } from './types.js';
 import { MemoizeExecutionPolicy } from './memoize-execution-policy.js';
 import { RetryableExecutionPolicy } from './retryable-execution-policy.js';
@@ -57,7 +57,7 @@ export class ExecutionPolicy {
    * @returns A decorator for an asynchronous method.
    */
   static shared<KeyArgs extends unknown[] = unknown[]>(
-    opts: SharedExecutionPolicyOptions<KeyArgs> = {},
+    opts: KeyedExecutionPolicyOptions<KeyArgs> = {},
   ): AsyncMethodDecorator {
     const policy = new SharedExecutionPolicy(opts);
     return policy.wrap.bind(policy);
@@ -87,7 +87,7 @@ export class ExecutionPolicy {
    * @returns A decorator for an asynchronous method.
    */
   static memoize<KeyArgs extends unknown[] = unknown[]>(
-    opts: SharedExecutionPolicyOptions<KeyArgs> = {},
+    opts: KeyedExecutionPolicyOptions<KeyArgs> = {},
   ): AsyncMethodDecorator {
     const policy = new MemoizeExecutionPolicy(opts);
     return policy.wrap.bind(policy);

@@ -98,13 +98,13 @@ export type SharedExecutionKeyProvider<A extends unknown[] = unknown[]> =
   Component<SharedExecutionKeyProviderObject<A>, 'get'>;
 
 /**
- * Options shared by {@link ExecutionPolicy.shared} and
- * {@link ExecutionPolicy.memoize}.
+ * Key-provider options for execution policies that distinguish shared
+ * executions by invocation arguments.
  *
  * @template A - The decorated method's argument tuple, used to type
  *   `keyProvider`'s parameters; see {@link SharedExecutionKeyProviderFn}.
  */
-export type SharedExecutionPolicyOptions<A extends unknown[] = unknown[]> = {
+export type KeyedExecutionPolicyOptions<A extends unknown[] = unknown[]> = {
   /**
    * Computes the key used to share an invocation with concurrent callers
    * on the same receiver. Defaults to a single fixed key, so all
