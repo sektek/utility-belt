@@ -333,7 +333,7 @@ describe('ExecutionPolicy', function () {
       });
       class Subject {
         calls = 0;
-        @ExecutionPolicy.shared({ keyProvider: ({ args }) => args[0] })
+        @ExecutionPolicy.shared({ keyProvider: shard => shard })
         async run(shard: string): Promise<string> {
           this.calls += 1;
           if (shard === 'a') await gateA;
@@ -355,7 +355,7 @@ describe('ExecutionPolicy', function () {
       class Subject {
         calls = 0;
         @ExecutionPolicy.shared({
-          keyProvider: async ({ args }) => args[0],
+          keyProvider: async shard => shard,
         })
         async run(shard: string): Promise<string> {
           this.calls += 1;
@@ -500,7 +500,7 @@ describe('ExecutionPolicy', function () {
       class Subject {
         calls = 0;
         @ExecutionPolicy.memoize({
-          keyProvider: async ({ args }) => args[0],
+          keyProvider: async shard => shard,
         })
         async run(shard: string): Promise<string> {
           this.calls += 1;
@@ -538,8 +538,8 @@ describe('ExecutionPolicy', function () {
       class Subject {
         calls = 0;
         @ExecutionPolicy.memoize<[UserEvent]>({
-          // No cast needed: `event` below is typed as UserEvent, not unknown.
-          keyProvider: ({ args: [event] }) => event.userId,
+          // No cast or unwrapping needed: `event` is typed as UserEvent.
+          keyProvider: event => event.userId,
         })
         async handle(event: UserEvent): Promise<string> {
           this.calls += 1;

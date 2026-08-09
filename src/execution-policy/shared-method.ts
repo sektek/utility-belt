@@ -1,6 +1,5 @@
 import { AnyAsyncMethod, invokeAsyncMethod } from './async-method.js';
-import { ProviderFn } from '../types/provider.js';
-import { SharedExecutionContext } from './types.js';
+import { SharedExecutionKeyProviderFn } from './types.js';
 import { isObject } from '../is-object.js';
 import { isPromiseLike } from '../is-promise-like.js';
 
@@ -35,7 +34,7 @@ export type SettlementOutcome = 'fulfilled' | 'rejected';
  */
 export const decorateSharedMethod =
   (
-    keyProvider: ProviderFn<unknown, SharedExecutionContext>,
+    keyProvider: SharedExecutionKeyProviderFn,
     retain: (outcome: SettlementOutcome) => boolean,
   ) =>
   (method: AnyAsyncMethod): AnyAsyncMethod => {
@@ -84,7 +83,7 @@ export const decorateSharedMethod =
         );
       }
 
-      const keyResult = keyProvider({ args });
+      const keyResult = keyProvider(...args);
       if (!isPromiseLike(keyResult)) {
         return join(this, keyResult, args);
       }

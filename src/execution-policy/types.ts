@@ -1,3 +1,4 @@
+import { Component } from '../types/component.js';
 import { PredicateComponent } from '../types/predicate.js';
 import { ProviderComponent } from '../types/provider.js';
 
@@ -51,46 +52,57 @@ export type RetryableExecutionPolicyOptions = {
 };
 
 /**
- * Information about a method invocation supplied to a shared execution
- * policy's key provider.
+ * A function that computes the key used to share an execution with
+ * concurrent callers, called with the decorated method's own arguments —
+ * not a wrapping context object — so a key provider can be written exactly
+ * like the extractor functions used elsewhere in this ecosystem (e.g. an
+ * `EventExtractor`): name the parameters you need directly, with no
+ * `unknown` to unwrap.
+ *
+ * May be synchronous or asynchronous; see {@link SharedExecutionKeyProvider}.
  *
  * @template A - The decorated method's argument tuple. Defaults to
  *   `unknown[]`; supply it explicitly (e.g.
- *   `ExecutionPolicy.memoize<[Event]>(...)`) to type `args` as the actual
- *   parameters of the method being decorated, rather than casting inside
- *   `keyProvider`.
+ *   `ExecutionPolicy.memoize<[Event]>(...)`) to type these parameters as
+ *   the method's actual arguments instead of `unknown`.
  */
-export type SharedExecutionContext<A extends unknown[] = unknown[]> = Readonly<{
-  /** The arguments supplied to the invocation. */
-  args: A;
-}>;
+export type SharedExecutionKeyProviderFn<A extends unknown[] = unknown[]> = (
+  ...args: A
+) => unknown | PromiseLike<unknown>;
+
+/** An object exposing {@link SharedExecutionKeyProviderFn} as a `get` method. */
+export interface SharedExecutionKeyProviderObject<
+  A extends unknown[] = unknown[],
+> {
+  get: SharedExecutionKeyProviderFn<A>;
+}
 
 /**
- * A provider component that computes the key used to share an execution
- * with concurrent callers.
+ * A component that computes the key used to share an execution with
+ * concurrent callers — either a plain function or an object exposing one
+ * as `get` (see {@link SharedExecutionKeyProviderFn}).
  *
- * May be synchronous or asynchronous. Two invocations that compute the
- * same key (compared as a `Map` key) on the same receiver share one
- * execution; all others execute independently. A synchronous key preserves
- * the exact same Promise reference for every caller sharing an execution;
- * an asynchronous key still guarantees a single execution and an
- * equal-valued result for every caller, but each caller receives its own
- * Promise wrapper rather than a literal shared reference, since the key
- * must be awaited before the policy can decide whether to join an
- * existing execution.
+ * Two invocations that compute the same key (compared as a `Map` key) on
+ * the same receiver share one execution; all others execute independently.
+ * A synchronous key preserves the exact same Promise reference for every
+ * caller sharing an execution; an asynchronous key still guarantees a
+ * single execution and an equal-valued result for every caller, but each
+ * caller receives its own Promise wrapper rather than a literal shared
+ * reference, since the key must be awaited before the policy can decide
+ * whether to join an existing execution.
  *
  * @template A - The decorated method's argument tuple; see
- *   {@link SharedExecutionContext}.
+ *   {@link SharedExecutionKeyProviderFn}.
  */
 export type SharedExecutionKeyProvider<A extends unknown[] = unknown[]> =
-  ProviderComponent<unknown, SharedExecutionContext<A>>;
+  Component<SharedExecutionKeyProviderObject<A>, 'get'>;
 
 /**
  * Options shared by {@link ExecutionPolicy.shared} and
  * {@link ExecutionPolicy.memoize}.
  *
  * @template A - The decorated method's argument tuple, used to type
- *   `keyProvider`'s `args`; see {@link SharedExecutionContext}.
+ *   `keyProvider`'s parameters; see {@link SharedExecutionKeyProviderFn}.
  */
 export type SharedExecutionPolicyOptions<A extends unknown[] = unknown[]> = {
   /**

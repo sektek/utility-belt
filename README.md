@@ -53,12 +53,15 @@ class ShardedConnectionPool {
 
 Both also accept a custom `keyProvider`, which may be synchronous or
 asynchronous — for example, looking up which shard a call belongs to before
-deciding whether it joins an existing connection:
+deciding whether it joins an existing connection. `keyProvider` is called
+with the decorated method's own arguments, not a wrapping context object —
+the same shape as the extractor functions used elsewhere in this ecosystem
+(e.g. an `EventExtractor`) — so there's nothing to unwrap:
 
 ```ts
 class UserConnectionPool {
   @ExecutionPolicy.memoize({
-    keyProvider: async ({ args }) => resolveShardId(args[0]),
+    keyProvider: async (userId: string) => resolveShardId(userId),
   })
   async connect(userId: string): Promise<Connection> {
     return openConnection(await resolveShardId(userId));
@@ -75,14 +78,14 @@ reference, since the key has to be awaited before the policy can decide
 whether an invocation joins an existing execution.
 
 `shared` and `memoize` are called before the decorated method is known, so
-`keyProvider`'s `args` can't be inferred from it automatically — by default
-it's typed `unknown[]`. Supply the method's argument tuple explicitly to
-type `args` against it instead of casting inside `keyProvider`:
+`keyProvider`'s parameters can't be inferred from it automatically — by
+default they're typed `unknown[]`. Supply the method's argument tuple
+explicitly to type them against it instead of casting inside `keyProvider`:
 
 ```ts
 class EventHandler {
   @ExecutionPolicy.memoize<[UserEvent]>({
-    keyProvider: ({ args: [event] }) => event.userId, // event: UserEvent, not unknown
+    keyProvider: event => event.userId, // event: UserEvent, not unknown
   })
   async handle(event: UserEvent): Promise<void> {
     /* ... */

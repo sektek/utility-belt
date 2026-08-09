@@ -1,4 +1,4 @@
-import { SharedExecutionContext, SharedExecutionKeyProvider } from './types.js';
+import { SharedExecutionKeyProviderFn } from './types.js';
 
 /** The key `singleKeyProvider` returns for every invocation. */
 const SINGLE_KEY = Symbol('ExecutionPolicy.singleKey');
@@ -14,7 +14,7 @@ const SINGLE_KEY = Symbol('ExecutionPolicy.singleKey');
  *
  * @returns The same key for every invocation.
  */
-export const singleKeyProvider: SharedExecutionKeyProvider = () => SINGLE_KEY;
+export const singleKeyProvider: SharedExecutionKeyProviderFn = () => SINGLE_KEY;
 
 /**
  * A key provider that keys by an invocation's first argument, so calls with
@@ -29,9 +29,9 @@ export const singleKeyProvider: SharedExecutionKeyProvider = () => SINGLE_KEY;
  * where argument equality should be structural rather than
  * reference-based, supply a custom `keyProvider` instead.
  *
- * @param context - The invocation's arguments.
- * @returns The invocation's first argument.
+ * @param firstArgument - The invocation's first argument.
+ * @returns `firstArgument`, used as the sharing key.
  */
-export const firstArgumentKeyProvider: SharedExecutionKeyProvider = (
-  context: SharedExecutionContext,
-) => context.args[0];
+export const firstArgumentKeyProvider: SharedExecutionKeyProviderFn = (
+  firstArgument: unknown,
+) => firstArgument;

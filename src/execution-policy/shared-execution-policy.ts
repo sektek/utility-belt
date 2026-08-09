@@ -1,9 +1,8 @@
 import {
   AsyncMethod,
-  SharedExecutionContext,
+  SharedExecutionKeyProviderFn,
   SharedExecutionPolicyOptions,
 } from './types.js';
-import { ProviderFn } from '../types/provider.js';
 import { decorateAsyncMethod } from './async-method.js';
 import { decorateSharedMethod } from './shared-method.js';
 import { getComponent } from '../get-component.js';
@@ -22,13 +21,13 @@ import { singleKeyProvider } from './key-providers.js';
  * share regardless of arguments.
  *
  * @template KeyArgs - The decorated method's argument tuple, used to type
- *   `keyProvider`'s `args`. Defaults to `unknown[]`; supply it explicitly
- *   (e.g. `new SharedExecutionPolicy<[Event]>(...)`, or via
+ *   `keyProvider`'s parameters. Defaults to `unknown[]`; supply it
+ *   explicitly (e.g. `new SharedExecutionPolicy<[Event]>(...)`, or via
  *   `ExecutionPolicy.shared<[Event]>(...)`) to type a custom `keyProvider`
  *   against the method's real parameters instead of casting inside it.
  */
 export class SharedExecutionPolicy<KeyArgs extends unknown[] = unknown[]> {
-  #keyProvider: ProviderFn<unknown, SharedExecutionContext<KeyArgs>>;
+  #keyProvider: SharedExecutionKeyProviderFn<KeyArgs>;
 
   /**
    * Creates a shared execution policy.
@@ -61,10 +60,7 @@ export class SharedExecutionPolicy<KeyArgs extends unknown[] = unknown[]> {
   ): TypedPropertyDescriptor<AsyncMethod<T, A, R>> | void {
     return decorateAsyncMethod(
       decorateSharedMethod(
-        this.#keyProvider.bind(this) as ProviderFn<
-          unknown,
-          SharedExecutionContext
-        >,
+        this.#keyProvider.bind(this) as SharedExecutionKeyProviderFn,
         () => false,
       ),
     )(target, propertyKey, descriptor);

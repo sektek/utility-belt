@@ -1,9 +1,8 @@
 import {
   AsyncMethod,
-  SharedExecutionContext,
+  SharedExecutionKeyProviderFn,
   SharedExecutionPolicyOptions,
 } from './types.js';
-import { ProviderFn } from '../types/provider.js';
 import { decorateAsyncMethod } from './async-method.js';
 import { decorateSharedMethod } from './shared-method.js';
 import { firstArgumentKeyProvider } from './key-providers.js';
@@ -24,13 +23,13 @@ import { getComponent } from '../get-component.js';
  * one retained execution per receiver regardless of arguments.
  *
  * @template KeyArgs - The decorated method's argument tuple, used to type
- *   `keyProvider`'s `args`. Defaults to `unknown[]`; supply it explicitly
- *   (e.g. `new MemoizeExecutionPolicy<[Event]>(...)`, or via
+ *   `keyProvider`'s parameters. Defaults to `unknown[]`; supply it
+ *   explicitly (e.g. `new MemoizeExecutionPolicy<[Event]>(...)`, or via
  *   `ExecutionPolicy.memoize<[Event]>(...)`) to type a custom `keyProvider`
  *   against the method's real parameters instead of casting inside it.
  */
 export class MemoizeExecutionPolicy<KeyArgs extends unknown[] = unknown[]> {
-  #keyProvider: ProviderFn<unknown, SharedExecutionContext<KeyArgs>>;
+  #keyProvider: SharedExecutionKeyProviderFn<KeyArgs>;
 
   /**
    * Creates a memoize execution policy.
@@ -63,10 +62,7 @@ export class MemoizeExecutionPolicy<KeyArgs extends unknown[] = unknown[]> {
   ): TypedPropertyDescriptor<AsyncMethod<T, A, R>> | void {
     return decorateAsyncMethod(
       decorateSharedMethod(
-        this.#keyProvider.bind(this) as ProviderFn<
-          unknown,
-          SharedExecutionContext
-        >,
+        this.#keyProvider.bind(this) as SharedExecutionKeyProviderFn,
         outcome => outcome === 'fulfilled',
       ),
     )(target, propertyKey, descriptor);
