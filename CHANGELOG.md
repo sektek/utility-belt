@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.5](https://github.com/sektek/utility-belt/compare/v0.3.4...v0.3.5) (2026-08-15)
+
+### Features
+
+* add isError predicate ([#48](https://github.com/sektek/utility-belt/issues/48)) ([fe4a850](https://github.com/sektek/utility-belt/commit/fe4a850645c484b5e7c84af025f4ddc3bd448590))
+
 ## [0.3.4](https://github.com/sektek/utility-belt/compare/v0.3.3...v0.3.4) (2026-08-15)
 
 ### Bug Fixes
