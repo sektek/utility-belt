@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.4](https://github.com/sektek/utility-belt/compare/v0.3.3...v0.3.4) (2026-08-15)
+
+### Bug Fixes
+
+* add ProcessManager.remove() to release per-instance signal listeners ([#47](https://github.com/sektek/utility-belt/issues/47)) ([14a1651](https://github.com/sektek/utility-belt/commit/14a16518bbea17f19003596e46c499fa206e7e6f))
+
 ## [0.3.3](https://github.com/sektek/utility-belt/compare/v0.3.2...v0.3.3) (2026-07-25)
 
 ### Features
