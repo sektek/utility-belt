@@ -14,7 +14,7 @@ import { singleKeyProvider } from './key-providers.js';
  * Defaults to `singleKeyProvider`, so all concurrent calls on a receiver
  * share regardless of arguments.
  *
- * @template KeyArgs - The decorated method's argument tuple, used to type
+ * @template KeyArgs - The wrapped function's argument tuple, used to type
  *   `keyProvider`'s parameters. Defaults to `unknown[]`; supply it
  *   explicitly (e.g. `new SharedExecutionPolicy<[Event]>(...)`, or via
  *   `ExecutionPolicy.shared<[Event]>(...)`) to type a custom `keyProvider`

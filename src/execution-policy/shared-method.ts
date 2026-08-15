@@ -4,12 +4,12 @@ import { isObject } from '../is-object.js';
 import { isPromiseLike } from '../is-promise-like.js';
 
 /**
- * Executes a decorated method so concurrent calls on the same receiver and
+ * Executes a wrapped function so concurrent calls on the same receiver and
  * key share one execution.
  *
- * One instance is created per decorated method (by
+ * One instance is created per wrapped function (by
  * {@link AbstractSharedExecutionPolicy}), so its recorded executions
- * (`#executionsByReceiver`) never leak between two different methods that
+ * never leak between two different functions that
  * happen to share a policy instance. The key is computed once per
  * invocation via `keyProvider`, which may be synchronous or asynchronous.
  * If an execution is already recorded for the receiver and key, its
@@ -29,6 +29,10 @@ import { isPromiseLike } from '../is-promise-like.js';
  * existing execution.
  */
 export class SharedMethodExecution {
+  #executionsByPrimitiveReceiver = new Map<
+    unknown,
+    Map<unknown, Promise<unknown>>
+  >();
   #method: AnyAsyncMethod;
   #keyProvider: SharedExecutionKeyProviderFn;
   #retain: (outcome: SettlementOutcome) => boolean;
@@ -37,7 +41,7 @@ export class SharedMethodExecution {
   /**
    * Creates a shared method execution.
    *
-   * @param method - The decorated method being executed.
+   * @param method - The wrapped function being executed.
    * @param keyProvider - Computes the sharing key from an invocation's
    *   arguments.
    * @param retain - Determines whether a settled execution's entry is kept.
@@ -53,21 +57,21 @@ export class SharedMethodExecution {
   }
 
   /**
-   * Invokes the decorated method for a receiver and arguments, joining an
+   * Invokes the wrapped function for a receiver and arguments, joining an
    * existing execution when one is already recorded for the same key.
    *
-   * @param receiver - The decorated method's receiver.
+   * @param receiver - The wrapped function's receiver.
    * @param args - The arguments supplied to the invocation.
    * @returns A promise for the (possibly shared) execution's result.
    */
   invoke(receiver: unknown, args: unknown[]): Promise<unknown> {
-    if (!isObject(receiver)) {
-      return Promise.reject(
-        new TypeError('A shared ExecutionPolicy requires an object receiver'),
-      );
+    let keyResult: unknown | PromiseLike<unknown>;
+    try {
+      keyResult = this.#keyProvider(...args);
+    } catch (error) {
+      return Promise.reject(error);
     }
 
-    const keyResult = this.#keyProvider(...args);
     if (!isPromiseLike(keyResult)) {
       return this.#join(receiver, keyResult, args);
     }
@@ -78,11 +82,15 @@ export class SharedMethodExecution {
     );
   }
 
-  #join(receiver: object, key: unknown, args: unknown[]): Promise<unknown> {
-    let executions = this.#executionsByReceiver.get(receiver);
+  #join(receiver: unknown, key: unknown, args: unknown[]): Promise<unknown> {
+    let executions = this.#getExecutions(receiver);
     if (!executions) {
       executions = new Map();
-      this.#executionsByReceiver.set(receiver, executions);
+      if (isObject(receiver)) {
+        this.#executionsByReceiver.set(receiver, executions);
+      } else {
+        this.#executionsByPrimitiveReceiver.set(receiver, executions);
+      }
     }
 
     const current = executions.get(key);
@@ -93,6 +101,13 @@ export class SharedMethodExecution {
     const settle = (outcome: SettlementOutcome) => {
       if (!this.#retain(outcome) && executions.get(key) === promise) {
         executions.delete(key);
+        if (
+          executions.size === 0 &&
+          !isObject(receiver) &&
+          this.#executionsByPrimitiveReceiver.get(receiver) === executions
+        ) {
+          this.#executionsByPrimitiveReceiver.delete(receiver);
+        }
       }
     };
     // The settlement handlers consume both outcomes of the derived promise.
@@ -105,5 +120,13 @@ export class SharedMethodExecution {
       .catch(() => settle('rejected'));
     /* eslint-enable promise/prefer-await-to-then */
     return promise;
+  }
+
+  #getExecutions(
+    receiver: unknown,
+  ): Map<unknown, Promise<unknown>> | undefined {
+    return isObject(receiver)
+      ? this.#executionsByReceiver.get(receiver)
+      : this.#executionsByPrimitiveReceiver.get(receiver);
   }
 }

@@ -4,7 +4,18 @@ General utilities to be used within @sektek projects
 
 ## Execution policies
 
-`ExecutionPolicy` provides composable decorators for asynchronous methods.
+Execution policy classes wrap asynchronous functions with reusable execution
+behavior. `ExecutionPolicy` adapts those policies into composable method
+decorators.
+
+```ts
+import { RetryableExecutionPolicy } from '@sektek/utility-belt';
+
+const retryable = new RetryableExecutionPolicy({ maxAttempts: 3 });
+const fetchWithRetry = retryable.wrap(fetchResource);
+
+await fetchWithRetry(resourceId);
+```
 
 ```ts
 import { ExecutionPolicy } from '@sektek/utility-belt';
@@ -54,7 +65,7 @@ class ShardedConnectionPool {
 Both also accept a custom `keyProvider`, which may be synchronous or
 asynchronous — for example, looking up which shard a call belongs to before
 deciding whether it joins an existing connection. `keyProvider` is called
-with the decorated method's own arguments, not a wrapping context object —
+with the wrapped function's own arguments, not a wrapping context object —
 the same shape as the extractor functions used elsewhere in this ecosystem
 (e.g. an `EventExtractor`) — so there's nothing to unwrap:
 
@@ -77,7 +88,7 @@ caller, but each caller gets its own Promise wrapper rather than a shared
 reference, since the key has to be awaited before the policy can decide
 whether an invocation joins an existing execution.
 
-`shared` and `memoize` are called before the decorated method is known, so
+The decorator factories are called before the decorated method is known, so
 `keyProvider`'s parameters can't be inferred from it automatically — by
 default they're typed `unknown[]`. Supply the method's argument tuple
 explicitly to type them against it instead of casting inside `keyProvider`:
@@ -96,12 +107,15 @@ class EventHandler {
 ### Writing a custom policy
 
 Every policy — including `retryable`, `shared`, and `memoize` — is a small
-class extending `AbstractExecutionPolicy`, which handles decorating the
-method; a policy only implements `createExecutor`, returning the function
-that replaces the method's implementation:
+class extending `AbstractExecutionPolicy`, which preserves the wrapped
+function's type; a policy only implements `createExecutor`, returning its
+replacement:
 
 ```ts
-import { AbstractExecutionPolicy, type AnyAsyncMethod } from '@sektek/utility-belt';
+import {
+  AbstractExecutionPolicy,
+  type AnyAsyncMethod,
+} from '@sektek/utility-belt';
 
 class LoggingExecutionPolicy extends AbstractExecutionPolicy {
   protected createExecutor(method: AnyAsyncMethod): AnyAsyncMethod {
@@ -113,8 +127,12 @@ class LoggingExecutionPolicy extends AbstractExecutionPolicy {
 }
 
 const loggingPolicy = new LoggingExecutionPolicy();
+const loggedRun = loggingPolicy.wrap(async () => {
+  /* ... */
+});
+
 class Subject {
-  @loggingPolicy.wrap.bind(loggingPolicy)
+  @ExecutionPolicy.decorate(loggingPolicy)
   async run(): Promise<void> {
     /* ... */
   }

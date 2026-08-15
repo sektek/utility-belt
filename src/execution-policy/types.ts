@@ -53,7 +53,7 @@ export type RetryableExecutionPolicyOptions = {
 
 /**
  * A function that computes the key used to share an execution with
- * concurrent callers, called with the decorated method's own arguments —
+ * concurrent callers, called with the wrapped function's own arguments —
  * not a wrapping context object — so a key provider can be written exactly
  * like the extractor functions used elsewhere in this ecosystem (e.g. an
  * `EventExtractor`): name the parameters you need directly, with no
@@ -61,7 +61,7 @@ export type RetryableExecutionPolicyOptions = {
  *
  * May be synchronous or asynchronous; see {@link SharedExecutionKeyProvider}.
  *
- * @template A - The decorated method's argument tuple. Defaults to
+ * @template A - The wrapped function's argument tuple. Defaults to
  *   `unknown[]`; supply it explicitly (e.g.
  *   `ExecutionPolicy.memoize<[Event]>(...)`) to type these parameters as
  *   the method's actual arguments instead of `unknown`.
@@ -91,7 +91,7 @@ export interface SharedExecutionKeyProviderObject<
  * reference, since the key must be awaited before the policy can decide
  * whether to join an existing execution.
  *
- * @template A - The decorated method's argument tuple; see
+ * @template A - The wrapped function's argument tuple; see
  *   {@link SharedExecutionKeyProviderFn}.
  */
 export type SharedExecutionKeyProvider<A extends unknown[] = unknown[]> =
@@ -101,7 +101,7 @@ export type SharedExecutionKeyProvider<A extends unknown[] = unknown[]> =
  * Key-provider options for execution policies that distinguish shared
  * executions by invocation arguments.
  *
- * @template A - The decorated method's argument tuple, used to type
+ * @template A - The wrapped function's argument tuple, used to type
  *   `keyProvider`'s parameters; see {@link SharedExecutionKeyProviderFn}.
  */
 export type KeyedExecutionPolicyOptions<A extends unknown[] = unknown[]> = {

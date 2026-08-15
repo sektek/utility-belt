@@ -2,47 +2,35 @@ import { AnyAsyncMethod } from './async-method.js';
 import { AsyncMethod } from './types.js';
 
 /**
- * Base class for `ExecutionPolicy` decorators.
+ * Base class for execution policies that wrap asynchronous functions.
  *
- * Handles the mechanics common to every policy — validating that the
- * decorated member is a method and replacing its implementation — so a
- * concrete policy only needs to implement `createExecutor`, the function
- * that becomes the method's new implementation.
+ * Handles type preservation while concrete policies implement
+ * `createExecutor`, the function that replaces the wrapped function.
  */
 export abstract class AbstractExecutionPolicy {
   /**
-   * Decorates an asynchronous method, replacing its implementation with
-   * the executor this policy creates for it via `createExecutor`.
+   * Wraps an asynchronous function with this policy's execution behavior.
    *
    * @template T - The method receiver type.
    * @template A - The method argument tuple.
    * @template R - The resolved method result type.
-   * @param _target - The decorated method's target.
-   * @param propertyKey - The decorated method's property key.
-   * @param descriptor - The decorated method's property descriptor.
-   * @returns The updated property descriptor.
-   * @throws {TypeError} If the decorated class member has no method value.
+   * @param method - The asynchronous function to wrap.
+   * @returns A function with the same receiver, arguments, and result type.
    */
   wrap<T, A extends unknown[], R>(
-    _target: object,
-    propertyKey: string | symbol,
-    descriptor: TypedPropertyDescriptor<AsyncMethod<T, A, R>>,
-  ): TypedPropertyDescriptor<AsyncMethod<T, A, R>> | void {
-    if (!descriptor.value) {
-      throw new TypeError(
-        `ExecutionPolicy can only decorate methods (${String(propertyKey)})`,
-      );
-    }
-    descriptor.value = this.createExecutor(
-      descriptor.value as AnyAsyncMethod,
-    ) as typeof descriptor.value;
-    return descriptor;
+    method: AsyncMethod<T, A, R>,
+  ): AsyncMethod<T, A, R> {
+    return this.createExecutor(method as AnyAsyncMethod) as AsyncMethod<
+      T,
+      A,
+      R
+    >;
   }
 
   /**
-   * Creates the function that replaces a decorated method's implementation.
+   * Creates the function that replaces a wrapped function's implementation.
    *
-   * @param method - The original decorated method, type-erased.
+   * @param method - The original wrapped function, type-erased.
    * @returns The function that replaces it.
    */
   protected abstract createExecutor(method: AnyAsyncMethod): AnyAsyncMethod;

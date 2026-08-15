@@ -45,9 +45,9 @@ export class RetryableExecutionPolicy extends AbstractExecutionPolicy {
   }
 
   /**
-   * Creates this policy's retry executor for a decorated method.
+   * Creates this policy's retry executor for a wrapped function.
    *
-   * @param method - The original decorated method, type-erased.
+   * @param method - The original wrapped function, type-erased.
    * @returns The function that replaces it.
    */
   protected createExecutor(method: AnyAsyncMethod): AnyAsyncMethod {

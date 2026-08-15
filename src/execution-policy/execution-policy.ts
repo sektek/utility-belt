@@ -3,6 +3,7 @@ import {
   KeyedExecutionPolicyOptions,
   RetryableExecutionPolicyOptions,
 } from './types.js';
+import { AbstractExecutionPolicy } from './abstract-execution-policy.js';
 import { MemoizeExecutionPolicy } from './memoize-execution-policy.js';
 import { RetryableExecutionPolicy } from './retryable-execution-policy.js';
 import { SharedExecutionPolicy } from './shared-execution-policy.js';
@@ -32,7 +33,7 @@ export class ExecutionPolicy {
     opts: RetryableExecutionPolicyOptions,
   ): AsyncMethodDecorator {
     const policy = new RetryableExecutionPolicy(opts);
-    return policy.wrap.bind(policy);
+    return ExecutionPolicy.decorate(policy);
   }
 
   /**
@@ -60,7 +61,7 @@ export class ExecutionPolicy {
     opts: KeyedExecutionPolicyOptions<KeyArgs> = {},
   ): AsyncMethodDecorator {
     const policy = new SharedExecutionPolicy(opts);
-    return policy.wrap.bind(policy);
+    return ExecutionPolicy.decorate(policy);
   }
 
   /**
@@ -90,6 +91,26 @@ export class ExecutionPolicy {
     opts: KeyedExecutionPolicyOptions<KeyArgs> = {},
   ): AsyncMethodDecorator {
     const policy = new MemoizeExecutionPolicy(opts);
-    return policy.wrap.bind(policy);
+    return ExecutionPolicy.decorate(policy);
+  }
+
+  /**
+   * Adapts an execution policy into a TypeScript method decorator.
+   *
+   * @param policy - The execution policy used to wrap the decorated method.
+   * @returns A decorator for an asynchronous method.
+   */
+  static decorate(policy: AbstractExecutionPolicy): AsyncMethodDecorator {
+    return (_target, propertyKey, descriptor) => {
+      if (!descriptor.value) {
+        throw new TypeError(
+          `ExecutionPolicy can only decorate methods (${String(propertyKey)})`,
+        );
+      }
+      descriptor.value = policy.wrap(
+        descriptor.value,
+      ) as typeof descriptor.value;
+      return descriptor;
+    };
   }
 }

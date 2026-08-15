@@ -16,7 +16,7 @@ import { firstArgumentKeyProvider } from './key-providers.js';
  * argument. Pass `keyProvider: singleKeyProvider` for singleton behavior —
  * one retained execution per receiver regardless of arguments.
  *
- * @template KeyArgs - The decorated method's argument tuple, used to type
+ * @template KeyArgs - The wrapped function's argument tuple, used to type
  *   `keyProvider`'s parameters. Defaults to `unknown[]`; supply it
  *   explicitly (e.g. `new MemoizeExecutionPolicy<[Event]>(...)`, or via
  *   `ExecutionPolicy.memoize<[Event]>(...)`) to type a custom `keyProvider`

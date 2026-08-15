@@ -13,11 +13,11 @@ import { getComponent } from '../get-component.js';
  * key: {@link SharedExecutionPolicy} and {@link MemoizeExecutionPolicy}.
  *
  * Resolves `keyProvider` and builds a {@link SharedMethodExecution} per
- * decorated method. A concrete subclass only decides, via `retain`,
+ * wrapped function. A concrete subclass only decides, via `retain`,
  * whether a settled execution stays recorded for future callers or is
  * cleared so the next call executes again.
  *
- * @template KeyArgs - The decorated method's argument tuple, used to type
+ * @template KeyArgs - The wrapped function's argument tuple, used to type
  *   `keyProvider`'s parameters.
  */
 export abstract class AbstractSharedExecutionPolicy<
@@ -44,10 +44,10 @@ export abstract class AbstractSharedExecutionPolicy<
   }
 
   /**
-   * Creates a {@link SharedMethodExecution} for a decorated method, using
+   * Creates a {@link SharedMethodExecution} for a wrapped function, using
    * this policy's `keyProvider` and `retain` rule.
    *
-   * @param method - The original decorated method, type-erased.
+   * @param method - The original wrapped function, type-erased.
    * @returns The function that replaces it.
    */
   protected createExecutor(method: AnyAsyncMethod): AnyAsyncMethod {

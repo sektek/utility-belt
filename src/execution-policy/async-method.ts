@@ -26,6 +26,8 @@ export const invokeAsyncMethod = (
   return isPromiseLike(result)
     ? Promise.resolve(result)
     : Promise.reject(
-        new TypeError('ExecutionPolicy can only decorate asynchronous methods'),
+        new TypeError(
+          'Execution policies can only wrap asynchronous functions',
+        ),
       );
 };

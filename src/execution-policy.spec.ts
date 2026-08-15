@@ -8,22 +8,24 @@ import {
   SharedExecutionPolicy,
   singleKeyProvider,
 } from './execution-policy/index.js';
+import { type Provider } from './types/provider.js';
 import { expect } from 'chai';
 import sinon from 'sinon';
 
 describe('ExecutionPolicy', function () {
   describe('retryable', function () {
-    it('can be applied directly as a bound policy method', async function () {
+    it('wraps a function directly while preserving its receiver', async function () {
       const policy = new RetryableExecutionPolicy({ maxAttempts: 2 });
       class Subject {
         calls = 0;
-        @policy.wrap.bind(policy)
         async run(): Promise<number> {
           if (++this.calls === 1) throw new Error('temporary');
           return this.calls;
         }
       }
-      expect(await new Subject().run()).to.equal(2);
+      const subject = new Subject();
+      const run = policy.wrap(subject.run);
+      expect(await run.call(subject)).to.equal(2);
     });
 
     it('returns successful results without retrying', async function () {
@@ -246,25 +248,18 @@ describe('ExecutionPolicy', function () {
         (new Subject().run as unknown as () => Promise<string>)(),
       ).to.be.rejectedWith(
         TypeError,
-        'ExecutionPolicy can only decorate asynchronous methods',
+        'Execution policies can only wrap asynchronous functions',
       );
     });
   });
 
   describe('shared', function () {
-    it('can be applied directly as a bound policy method', async function () {
+    it('wraps a receiver-less function directly', async function () {
       const policy = new SharedExecutionPolicy();
-      class Subject {
-        calls = 0;
-        @policy.wrap.bind(policy)
-        async run(): Promise<number> {
-          return ++this.calls;
-        }
-      }
-      const subject = new Subject();
-      expect(await Promise.all([subject.run(), subject.run()])).to.deep.equal([
-        1, 1,
-      ]);
+      let calls = 0;
+      const run = policy.wrap(async () => ++calls);
+      expect(await Promise.all([run(), run()])).to.deep.equal([1, 1]);
+      expect(calls).to.equal(1);
     });
 
     it('shares the first in-flight call regardless of arguments', async function () {
@@ -373,22 +368,33 @@ describe('ExecutionPolicy', function () {
       expect(second).to.equal('a');
       expect(subject.calls).to.equal(1);
     });
+
+    it('normalizes a synchronous keyProvider failure to a rejection', async function () {
+      const failure = new Error('key failed');
+      class Subject {
+        @ExecutionPolicy.shared({
+          keyProvider: () => {
+            throw failure;
+          },
+        })
+        async run(): Promise<void> {}
+      }
+      let result!: Promise<void>;
+      expect(() => {
+        result = new Subject().run();
+      }).not.to.throw();
+      await expect(result).to.be.rejectedWith(failure);
+    });
   });
 
   describe('memoize', function () {
-    it('can be applied directly as a bound policy method', async function () {
+    it('wraps a receiver-less function directly', async function () {
       const policy = new MemoizeExecutionPolicy();
-      class Subject {
-        calls = 0;
-        @policy.wrap.bind(policy)
-        async run(): Promise<number> {
-          return ++this.calls;
-        }
-      }
-      const subject = new Subject();
-      expect(await Promise.all([subject.run(), subject.run()])).to.deep.equal([
-        1, 1,
-      ]);
+      let calls = 0;
+      const run = policy.wrap(async () => ++calls);
+      expect(await Promise.all([run(), run()])).to.deep.equal([1, 1]);
+      expect(await run()).to.equal(1);
+      expect(calls).to.equal(1);
     });
 
     it('shares the first in-flight call for the same first argument', async function () {
@@ -554,9 +560,54 @@ describe('ExecutionPolicy', function () {
       expect(await subject.handle({ userId: 'u2' })).to.equal('u2');
       expect(subject.calls).to.equal(2);
     });
+
+    it('accepts a reusable Provider as a keyProvider without an adapter', async function () {
+      type Event = { type: string };
+      const eventTypeProvider: Provider<string | symbol, Event> = {
+        get: event => event.type,
+      };
+      const policy = new MemoizeExecutionPolicy<[Event]>({
+        keyProvider: eventTypeProvider,
+      });
+      let calls = 0;
+      const handle = policy.wrap(async (event: Event) => {
+        calls += 1;
+        return event.type;
+      });
+      expect(await handle({ type: 'created' })).to.equal('created');
+      expect(await handle({ type: 'created' })).to.equal('created');
+      expect(await handle({ type: 'deleted' })).to.equal('deleted');
+      expect(calls).to.equal(2);
+    });
+
+    it('keeps state isolated when one policy wraps multiple functions', async function () {
+      const policy = new MemoizeExecutionPolicy();
+      let firstCalls = 0;
+      let secondCalls = 0;
+      const first = policy.wrap(async () => ++firstCalls);
+      const second = policy.wrap(async () => ++secondCalls);
+      expect(await first()).to.equal(1);
+      expect(await second()).to.equal(1);
+      expect(await first()).to.equal(1);
+      expect(await second()).to.equal(1);
+    });
   });
 
   describe('composition', function () {
+    it('composes policies as direct function wrappers', async function () {
+      const retryable = new RetryableExecutionPolicy({ maxAttempts: 2 });
+      const shared = new SharedExecutionPolicy();
+      let calls = 0;
+      const run = shared.wrap(
+        retryable.wrap(async () => {
+          if (++calls === 1) throw new Error('temporary');
+          return calls;
+        }),
+      );
+      expect(await Promise.all([run(), run()])).to.deep.equal([2, 2]);
+      expect(calls).to.equal(2);
+    });
+
     it('shares an entire retry sequence when shared is outermost', async function () {
       const retryPredicate = sinon.stub().returns(true);
       class Subject {
@@ -617,8 +668,20 @@ describe('ExecutionPolicy', function () {
         }
       }
       const policy = new UppercasingExecutionPolicy();
+      const run = policy.wrap(async (value: string) => value);
+      expect(await run('hi')).to.equal('HI');
+    });
+
+    it('adapts a custom policy into a decorator', async function () {
+      class UppercasingExecutionPolicy extends AbstractExecutionPolicy {
+        protected createExecutor(method: AnyAsyncMethod): AnyAsyncMethod {
+          return async function (this: unknown, ...args: unknown[]) {
+            return String(await method.apply(this, args)).toUpperCase();
+          };
+        }
+      }
       class Subject {
-        @policy.wrap.bind(policy)
+        @ExecutionPolicy.decorate(new UppercasingExecutionPolicy())
         async run(value: string): Promise<string> {
           return value;
         }
