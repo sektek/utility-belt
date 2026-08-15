@@ -232,6 +232,10 @@ describe('ProcessManager', function () {
     });
 
     it('does not register SIGTERM or SIGINT listeners when a processManager is provided', async function () {
+      // Give the parent a stoppable of its own first, so its lazily
+      // registered signal listener is already in place before the baseline
+      // is captured below.
+      parent.add({ stop: sinon.stub().resolves() });
       const listenersBefore = process.listenerCount('SIGTERM');
       manager = new ProcessManager({ name: 'child', processManager: parent });
       expect(process.listenerCount('SIGTERM')).to.equal(listenersBefore);
