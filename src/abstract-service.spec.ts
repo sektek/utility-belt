@@ -37,6 +37,10 @@ describe('AbstractService', function () {
     });
 
     it('should not add SIGTERM or SIGINT listeners when a processManager is provided', function () {
+      // Give the manager a stoppable of its own first, so its lazily
+      // registered signal listener is already in place before the baseline
+      // is captured below.
+      manager.add({ stop: sinon.stub().resolves() });
       const spy = sinon.spy(manager, 'add');
       const sigtermBefore = process.listenerCount('SIGTERM');
       const sigintBefore = process.listenerCount('SIGINT');

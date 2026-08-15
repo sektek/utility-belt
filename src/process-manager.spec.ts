@@ -55,6 +55,66 @@ describe('ProcessManager', function () {
     });
   });
 
+  describe('remove', function () {
+    it('stops calling start on a removed startable', async function () {
+      const start = sinon.stub().resolves();
+      const service = { start };
+      manager = new ProcessManager({ name: 'test' });
+      manager.add(service);
+      manager.remove(service);
+      await manager.start();
+      expect(start.called).to.be.false;
+    });
+
+    it('stops calling stop on a removed stoppable', async function () {
+      const stop = sinon.stub().resolves();
+      const service = { stop };
+      manager = new ProcessManager({ name: 'test' });
+      manager.add(service);
+      manager.remove(service);
+      await manager.stop();
+      expect(stop.called).to.be.false;
+    });
+
+    it('removes SIGTERM and SIGINT listeners once the last stoppable is removed', function () {
+      const service = { stop: sinon.stub().resolves() };
+      manager = new ProcessManager({ name: 'test' });
+      const sigtermBefore = process.listenerCount('SIGTERM');
+      const sigintBefore = process.listenerCount('SIGINT');
+
+      manager.add(service);
+      expect(process.listenerCount('SIGTERM')).to.equal(sigtermBefore + 1);
+      expect(process.listenerCount('SIGINT')).to.equal(sigintBefore + 1);
+
+      manager.remove(service);
+      expect(process.listenerCount('SIGTERM')).to.equal(sigtermBefore);
+      expect(process.listenerCount('SIGINT')).to.equal(sigintBefore);
+    });
+
+    it('keeps SIGTERM and SIGINT listeners registered while other stoppables remain', function () {
+      const first = { stop: sinon.stub().resolves() };
+      const second = { stop: sinon.stub().resolves() };
+      manager = new ProcessManager({ name: 'test' });
+      const sigtermBefore = process.listenerCount('SIGTERM');
+
+      manager.add(first);
+      manager.add(second);
+      manager.remove(first);
+      expect(process.listenerCount('SIGTERM')).to.equal(sigtermBefore + 1);
+    });
+
+    it('no longer calls stop on a removed service after a signal is received', async function () {
+      const stop = sinon.stub().resolves();
+      const service = { stop };
+      manager = new ProcessManager({ name: 'test' });
+      manager.add(service);
+      manager.remove(service);
+      process.emit('SIGTERM');
+      await delay(10);
+      expect(stop.called).to.be.false;
+    });
+  });
+
   describe('start', function () {
     it('calls start on all registered startables', async function () {
       const starts = [sinon.stub().resolves(), sinon.stub().resolves()];
@@ -232,9 +292,15 @@ describe('ProcessManager', function () {
     });
 
     it('does not register SIGTERM or SIGINT listeners when a processManager is provided', async function () {
-      const listenersBefore = process.listenerCount('SIGTERM');
+      // Give the parent a stoppable of its own first, so its lazily
+      // registered signal listener is already in place before the baseline
+      // is captured below.
+      parent.add({ stop: sinon.stub().resolves() });
+      const sigtermBefore = process.listenerCount('SIGTERM');
+      const sigintBefore = process.listenerCount('SIGINT');
       manager = new ProcessManager({ name: 'child', processManager: parent });
-      expect(process.listenerCount('SIGTERM')).to.equal(listenersBefore);
+      expect(process.listenerCount('SIGTERM')).to.equal(sigtermBefore);
+      expect(process.listenerCount('SIGINT')).to.equal(sigintBefore);
     });
 
     it('does not call process.off on stop when a processManager is provided', async function () {

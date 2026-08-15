@@ -7,6 +7,8 @@ import {
 } from './types/index.js';
 import { getComponent } from './get-component.js';
 import { isNamed } from './is-named.js';
+import { isStartable } from './is-startable.js';
+import { isStoppable } from './is-stoppable.js';
 import { serialExecutionStrategy } from './execution-strategies/index.js';
 
 export type ProcessManagerOptions = ComponentOptions & {
@@ -33,7 +35,7 @@ export type ProcessManagerOptions = ComponentOptions & {
   /**
    * An optional `ProcessManager` to register this instance with.
    * When provided, this manager's `start` and `stop` are delegated to it,
-   * and no SIGTERM/SIGINT listeners are registered.
+   * and this instance never registers its own SIGTERM/SIGINT listeners.
    */
   processManager?: ProcessManager;
 };
@@ -50,6 +52,11 @@ export type ProcessManagerOptions = ComponentOptions & {
  * corresponding call to reject if an individual service has not completed within
  * the allotted time. If the timed-out service implements `Named`, its name is
  * included in the error message.
+ *
+ * When constructed without a parent `processManager`, SIGTERM/SIGINT listeners
+ * are registered lazily on the first `Stoppable` added, and removed again once
+ * `remove()` leaves it with no `Stoppable` left to protect — so a manager that
+ * never outlives its services never leaks process-level signal handles.
  *
  * @example
  * const manager = new ProcessManager({
@@ -70,6 +77,7 @@ export class ProcessManager extends AbstractComponent {
   #startables: Set<Startable> = new Set();
   #stoppables: Set<Stoppable> = new Set();
   #signalListener: (() => void) | undefined;
+  #managesOwnSignals: boolean;
 
   constructor(opts: ProcessManagerOptions) {
     super(opts);
@@ -82,10 +90,9 @@ export class ProcessManager extends AbstractComponent {
     this.#maxStopWaitMs = opts.maxStopWaitMs ?? Infinity;
     if (opts.processManager) {
       opts.processManager.add(this);
+      this.#managesOwnSignals = false;
     } else {
-      this.#signalListener = this.stop.bind(this);
-      process.on('SIGTERM', this.#signalListener);
-      process.on('SIGINT', this.#signalListener);
+      this.#managesOwnSignals = true;
     }
   }
 
@@ -101,15 +108,54 @@ export class ProcessManager extends AbstractComponent {
     const logger = this.logger();
     const serviceName = isNamed(service) ? service.name : undefined;
 
-    if ('start' in service) {
+    if (isStartable(service)) {
       logger.info('startable added', { service: serviceName });
       this.#startables.add(service);
     }
 
-    if ('stop' in service) {
+    if (isStoppable(service)) {
       logger.info('stoppable added', { service: serviceName });
       this.#stoppables.add(service);
+      if (this.#managesOwnSignals) {
+        this.#registerSignalListener();
+      }
     }
+  }
+
+  remove(service: Startable | Stoppable): void {
+    const logger = this.logger();
+    const serviceName = isNamed(service) ? service.name : undefined;
+
+    if (isStartable(service)) {
+      logger.info('startable removed', { service: serviceName });
+      this.#startables.delete(service);
+    }
+
+    if (isStoppable(service)) {
+      logger.info('stoppable removed', { service: serviceName });
+      this.#stoppables.delete(service);
+      if (this.#managesOwnSignals && this.#stoppables.size === 0) {
+        this.#unregisterSignalListener();
+      }
+    }
+  }
+
+  #registerSignalListener(): void {
+    if (this.#signalListener) {
+      return;
+    }
+    this.#signalListener = this.stop.bind(this);
+    process.on('SIGTERM', this.#signalListener);
+    process.on('SIGINT', this.#signalListener);
+  }
+
+  #unregisterSignalListener(): void {
+    if (!this.#signalListener) {
+      return;
+    }
+    process.off('SIGTERM', this.#signalListener);
+    process.off('SIGINT', this.#signalListener);
+    this.#signalListener = undefined;
   }
 
   /**
@@ -147,18 +193,14 @@ export class ProcessManager extends AbstractComponent {
   /**
    * Stops all registered `Stoppable` services using the configured execution strategy.
    * If `maxStopWaitMs` is set, each individual service must complete within that limit.
-   * If SIGTERM/SIGINT listeners were registered at construction, they are removed.
+   * If this manager owns SIGTERM/SIGINT listeners, they are removed.
    *
    * @throws {Error} If any service's `stop()` rejects, or if a service exceeds `maxStopWaitMs`.
    */
   async stop(): Promise<void> {
     const logger = this.logger();
     logger.info('stopping services', { count: this.#stoppables.size });
-    if (this.#signalListener) {
-      process.off('SIGTERM', this.#signalListener);
-      process.off('SIGINT', this.#signalListener);
-      this.#signalListener = undefined;
-    }
+    this.#unregisterSignalListener();
     await this.#executionStrategy(
       [...this.#stoppables].map(
         s => () =>
