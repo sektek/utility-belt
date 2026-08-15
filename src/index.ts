@@ -7,6 +7,7 @@ export * from './execution-strategies/index.js';
 export * from './get-component.js';
 export * from './http/index.js';
 export * from './is-a.js';
+export * from './is-error.js';
 export * from './is-named.js';
 export * from './is-function.js';
 export * from './is-primitive.js';
