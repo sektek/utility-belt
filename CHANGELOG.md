@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.6](https://github.com/sektek/utility-belt/compare/v0.3.5...v0.3.6) (2026-09-19)
+
+### Features
+
+* new providers and predicates ([#49](https://github.com/sektek/utility-belt/issues/49)) ([47486a3](https://github.com/sektek/utility-belt/commit/47486a390c8234e51d0c39937590433163be6bb1))
+
 ## [0.3.5](https://github.com/sektek/utility-belt/compare/v0.3.4...v0.3.5) (2026-08-15)
 
 ### Features
