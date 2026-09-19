@@ -1,9 +1,6 @@
-import { expect, use } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
+import { expect } from 'chai';
 
 import { DelegatingProvider } from './delegating-provider.js';
-
-use(chaiAsPromised);
 
 describe('DelegatingProvider', function () {
   it('should delegate to the provider matching the selected key', async function () {
@@ -13,6 +10,7 @@ describe('DelegatingProvider', function () {
         even: () => 'even',
         odd: () => 'odd',
       },
+      default: () => 'default',
     });
 
     expect(await provider.get(2)).to.equal('even');
@@ -31,19 +29,6 @@ describe('DelegatingProvider', function () {
     expect(await provider.get()).to.equal('default');
   });
 
-  it('should throw when the key is not found and no default is given', async function () {
-    const provider = new DelegatingProvider<string>({
-      selector: () => 'unknown',
-      delegates: {
-        known: () => 'known',
-      },
-    });
-
-    await expect(provider.get()).to.be.rejectedWith(
-      'No provider delegate found for key: unknown',
-    );
-  });
-
   it('should fall back to the default delegate when the selector returns undefined', async function () {
     const provider = new DelegatingProvider<string>({
       selector: () => undefined,
@@ -56,20 +41,7 @@ describe('DelegatingProvider', function () {
     expect(await provider.get()).to.equal('default');
   });
 
-  it('should throw when the selector returns undefined and no default is given', async function () {
-    const provider = new DelegatingProvider<string>({
-      selector: () => undefined,
-      delegates: {
-        known: () => 'known',
-      },
-    });
-
-    await expect(provider.get()).to.be.rejectedWith(
-      'No provider delegate found for an undefined key.',
-    );
-  });
-
-  it('should support component style selectors and delegates', async function () {
+  it('should support component style selectors, delegates, and default', async function () {
     const provider = new DelegatingProvider<string>({
       selector: { get: () => 'known' },
       delegates: {
@@ -87,6 +59,7 @@ describe('DelegatingProvider', function () {
       delegates: {
         known: () => 'known',
       },
+      default: () => 'default',
     });
 
     expect(await provider.get()).to.equal('known');

@@ -20,9 +20,10 @@ export type DelegatingProviderOptions<R, T = void> = {
   delegates: Record<string, ProviderComponent<R, T>>;
   /**
    * The provider component used when the selected key has no matching
-   * delegate, or when the selector returns `undefined`.
+   * delegate, or when the selector returns `undefined`. Required, since a
+   * {@link Provider} must always resolve to a value.
    */
-  default?: ProviderComponent<R, T>;
+  default: ProviderComponent<R, T>;
 };
 
 /**
@@ -35,7 +36,7 @@ export type DelegatingProviderOptions<R, T = void> = {
 export class DelegatingProvider<R, T = void> implements Provider<R, T> {
   #selector: OptionalProviderFn<string, T>;
   #delegateMap: Map<string, ProviderFn<R, T>>;
-  #defaultDelegate?: ProviderFn<R, T>;
+  #defaultDelegate: ProviderFn<R, T>;
 
   constructor(options: DelegatingProviderOptions<R, T>) {
     this.#selector = getComponent(options.selector, 'get');
@@ -45,9 +46,7 @@ export class DelegatingProvider<R, T = void> implements Provider<R, T> {
         getComponent(component, 'get'),
       ]),
     );
-    this.#defaultDelegate = options.default
-      ? getComponent(options.default, 'get')
-      : undefined;
+    this.#defaultDelegate = getComponent(options.default, 'get');
   }
 
   /**
@@ -56,22 +55,13 @@ export class DelegatingProvider<R, T = void> implements Provider<R, T> {
    *
    * @param context - The argument to pass to the selector and delegate.
    * @returns The value returned by the resolved delegate provider.
-   * @throws {Error} If no delegate matches the selected key and no default
-   *   delegate was supplied.
    */
   async get(context: T): Promise<R> {
     const key = await this.#selector(context);
-    const delegate = key != null ? this.#delegateMap.get(key) : undefined;
-    const resolved = delegate ?? this.#defaultDelegate;
-
-    if (!resolved) {
-      throw new Error(
-        key != null
-          ? `No provider delegate found for key: ${key}`
-          : 'No provider delegate found for an undefined key.',
-      );
-    }
-
-    return await resolved(context);
+    const delegate =
+      key != null
+        ? (this.#delegateMap.get(key) ?? this.#defaultDelegate)
+        : this.#defaultDelegate;
+    return await delegate(context);
   }
 }
