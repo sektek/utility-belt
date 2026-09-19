@@ -3,7 +3,7 @@ import {
   SyncProvider,
   SyncProviderComponent,
   SyncProviderFn,
-} from './sync-provider.js';
+} from '../../types/sync-provider.js';
 
 export type LoggerProviderOptions<T = void> = {
   /* The context to use for this provider. */

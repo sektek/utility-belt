@@ -1,8 +1,8 @@
 import {
   OptionalProviderComponent,
   OptionalProviderFn,
-} from './types/optional-provider.js';
-import { getComponent } from './get-component.js';
+} from '../types/optional-provider.js';
+import { getComponent } from '../get-component.js';
 
 /**
  * Options for the TimeSensitiveOptionalProvider constructor.

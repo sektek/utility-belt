@@ -1,5 +1,5 @@
-import type { ProviderComponent, ProviderFn } from './types/provider.js';
-import { getComponent } from './get-component.js';
+import type { ProviderComponent, ProviderFn } from '../types/provider.js';
+import { getComponent } from '../get-component.js';
 
 /**
  * Options for the TimeSensitiveProvider constructor.

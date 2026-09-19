@@ -6,7 +6,7 @@ import {
   LoggerProviderOptions,
 } from './types/logger-provider.js';
 
-import { getComponent } from './get-component.js';
+import { getComponent } from '../get-component.js';
 
 /**
  * Options for {@link DefaultLoggerProvider}.

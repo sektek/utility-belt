@@ -1,6 +1,6 @@
-import { ProcessorComponent, ProcessorFn } from './types/processor.js';
-import { ProviderComponent, ProviderFn } from './types/provider.js';
-import { getComponent } from './get-component.js';
+import { ProcessorComponent, ProcessorFn } from '../types/processor.js';
+import { Provider, ProviderComponent, ProviderFn } from '../types/provider.js';
+import { getComponent } from '../get-component.js';
 
 export type ProcessingProviderOptions<I, O = I, T = void> = {
   provider: ProviderComponent<I, T>;
@@ -15,7 +15,7 @@ export type ProcessingProviderOptions<I, O = I, T = void> = {
  * @template O - The type of the output value after processing.
  * @template T - The type of the context used by the Provider.
  */
-export class ProcessingProvider<I, O = I, T = void> {
+export class ProcessingProvider<I, O = I, T = void> implements Provider<O, T> {
   #provider: ProviderFn<I, T>;
   #processor: ProcessorFn<I, O>;
 

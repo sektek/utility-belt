@@ -1,4 +1,4 @@
-import { Named } from './types/index.js';
+import { Named } from '../types/index.js';
 
 /**
  * Type guard that returns `true` if `value` implements the `Named` interface,
