@@ -1,11 +1,10 @@
 import {
   OptionalProviderComponent,
-  OptionalProviderFn,
-  Provider,
   ProviderComponent,
-  ProviderFn,
 } from '../types/index.js';
-import { getComponent } from '../get-component.js';
+
+import { DelegatingOptionalProvider } from './delegating-optional-provider.js';
+import { FallbackProvider } from './fallback-provider.js';
 
 /**
  * Options for creating a DelegatingProvider.
@@ -33,35 +32,16 @@ export type DelegatingProviderOptions<R, T = void> = {
  * @template R - The type of the value returned by the provider.
  * @template T - The type of the argument passed to the provider.
  */
-export class DelegatingProvider<R, T = void> implements Provider<R, T> {
-  #selector: OptionalProviderFn<string, T>;
-  #delegateMap: Map<string, ProviderFn<R, T>>;
-  #defaultDelegate: ProviderFn<R, T>;
-
+export class DelegatingProvider<R, T = void> extends FallbackProvider<R, T> {
   constructor(options: DelegatingProviderOptions<R, T>) {
-    this.#selector = getComponent(options.selector, 'get');
-    this.#delegateMap = new Map(
-      Object.entries(options.delegates).map(([key, component]) => [
-        key,
-        getComponent(component, 'get'),
-      ]),
-    );
-    this.#defaultDelegate = getComponent(options.default, 'get');
-  }
+    const delegatingOptionalProvider = new DelegatingOptionalProvider<R, T>({
+      selector: options.selector,
+      delegates: options.delegates,
+    });
 
-  /**
-   * Selects a key via the selector, then invokes the matching delegate
-   * provider (or the default delegate, when the key has no match).
-   *
-   * @param context - The argument to pass to the selector and delegate.
-   * @returns The value returned by the resolved delegate provider.
-   */
-  async get(context: T): Promise<R> {
-    const key = await this.#selector(context);
-    const delegate =
-      key != null
-        ? (this.#delegateMap.get(key) ?? this.#defaultDelegate)
-        : this.#defaultDelegate;
-    return await delegate(context);
+    super({
+      provider: delegatingOptionalProvider,
+      defaultValueProvider: options.default,
+    });
   }
 }
