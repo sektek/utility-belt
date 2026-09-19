@@ -1,5 +1,5 @@
-import { ProviderComponent, ProviderFn } from './types/index.js';
-import { getComponent } from './get-component.js';
+import { ProviderComponent, ProviderFn } from '../types/index.js';
+import { getComponent } from '../get-component.js';
 
 /**
  * Options for creating a SingletonProvider.

@@ -1,7 +1,6 @@
 import { EventEmitter } from 'eventemitter3';
 
-import { LoggerProvider } from './types/logger-provider.js';
-import { NullLoggerProvider } from './null-logger-provider.js';
+import { LoggerProvider, NullLoggerProvider } from './logging/index.js';
 
 const COMPONENT_NAME_IDS = new Map<string, number>();
 

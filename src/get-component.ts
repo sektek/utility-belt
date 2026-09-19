@@ -3,7 +3,7 @@ import {
   SyncProviderFn,
 } from './types/sync-provider.js';
 import { InvalidComponentError } from './errors/invalid-component-error.js';
-import { isA } from './is-a.js';
+import { isA } from './guards/is-a.js';
 
 /**
  * Options for the getComponent function, allowing for default values and custom error messages.

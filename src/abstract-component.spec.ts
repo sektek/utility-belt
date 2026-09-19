@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import sinonChai from 'sinon-chai';
 
 import { AbstractComponent, ComponentOptions } from './abstract-component.js';
-import { NullLoggerProvider } from './null-logger-provider.js';
+import { NullLoggerProvider } from './logging/index.js';
 
 use(sinonChai);
 

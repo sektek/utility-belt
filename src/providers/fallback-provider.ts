@@ -1,9 +1,9 @@
 import {
   OptionalProviderComponent,
   OptionalProviderFn,
-} from './types/optional-provider.js';
-import { Provider, ProviderComponent, ProviderFn } from './types/provider.js';
-import { getComponent } from './get-component.js';
+} from '../types/optional-provider.js';
+import { Provider, ProviderComponent, ProviderFn } from '../types/provider.js';
+import { getComponent } from '../get-component.js';
 
 /**
  * Options for the {@link FallbackProvider} constructor.

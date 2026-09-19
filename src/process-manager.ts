@@ -6,9 +6,9 @@ import {
   Stoppable,
 } from './types/index.js';
 import { getComponent } from './get-component.js';
-import { isNamed } from './is-named.js';
-import { isStartable } from './is-startable.js';
-import { isStoppable } from './is-stoppable.js';
+import { isNamed } from './guards/is-named.js';
+import { isStartable } from './guards/is-startable.js';
+import { isStoppable } from './guards/is-stoppable.js';
 import { serialExecutionStrategy } from './execution-strategies/index.js';
 
 export type ProcessManagerOptions = ComponentOptions & {

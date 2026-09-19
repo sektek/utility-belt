@@ -1,4 +1,4 @@
-import { Startable } from './types/startable.js';
+import { Startable } from '../types/startable.js';
 
 /**
  * Type guard that returns `true` if `value` implements the `Startable` interface,

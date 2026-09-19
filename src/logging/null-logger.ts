@@ -1,5 +1,5 @@
 import { Logger } from './types/logger.js';
-import { noOp } from './no-op.js';
+import { noOp } from '../no-op.js';
 
 /**
  * A Logger implementation that does nothing. All methods are no-ops.

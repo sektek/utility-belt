@@ -1,4 +1,4 @@
-import { Stoppable } from './types/stoppable.js';
+import { Stoppable } from '../types/stoppable.js';
 
 /**
  * Type guard that returns `true` if `value` implements the `Stoppable` interface,
