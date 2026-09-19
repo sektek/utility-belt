@@ -1,7 +1,15 @@
 import { Predicate, Provider } from '../types/index.js';
 
+/**
+ * Options for creating an EnvVarBooleanProvider.
+ */
 type EnvVarBooleanProviderOpts = {
+  /** The name of the environment variable to read. */
   variableName: string;
+  /**
+   * The value returned when the environment variable is not set.
+   * Defaults to `false`.
+   */
   defaultValue?: boolean;
 };
 
@@ -19,6 +27,11 @@ export class EnvVarBooleanProvider
     this.#defaultValue = opts.defaultValue ?? false;
   }
 
+  /**
+   * @returns `true` if the environment variable's value (case-insensitive)
+   *   is `"true"`; otherwise `false`, or the configured `defaultValue` if
+   *   the variable is not set.
+   */
   get(): boolean {
     const value = process.env[this.#variableName];
 
@@ -29,6 +42,12 @@ export class EnvVarBooleanProvider
     return value.toLowerCase() === 'true';
   }
 
+  /**
+   * Alias for {@link get}, allowing this provider to be used as a
+   * predicate.
+   *
+   * @returns The same result as {@link get}.
+   */
   test(): boolean {
     return this.get();
   }

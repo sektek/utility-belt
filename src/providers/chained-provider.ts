@@ -19,6 +19,14 @@ type ChainedProviderOpts<T> = Omit<FallbackProviderOptions<T>, 'provider'> & {
   providers: OptionalProviderComponent<T>[];
 };
 
+/**
+ * A provider that queries a list of optional providers in order, returning
+ * the first defined value, and falling back to a static or provided
+ * default (per {@link FallbackProvider}) when every provider in the chain
+ * returns `undefined`.
+ *
+ * @template T - The type of the value returned by the provider.
+ */
 export class ChainedProvider<T> extends FallbackProvider<T> {
   constructor(opts: ChainedProviderOpts<T>) {
     const chainedOptionalProvider = new ChainedOptionalProvider({
