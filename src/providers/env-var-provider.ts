@@ -1,6 +1,6 @@
 import { Provider } from '../types/index.js';
 
-class EnvVarProvider implements Provider<string> {
+export class EnvVarProvider implements Provider<string> {
   #variableName: string;
 
   constructor(opts: { variableName: string }) {
@@ -17,5 +17,3 @@ class EnvVarProvider implements Provider<string> {
     return value;
   }
 }
-
-export default EnvVarProvider;

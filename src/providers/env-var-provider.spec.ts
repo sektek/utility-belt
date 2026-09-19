@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import EnvVarProvider from './env-var-provider.js';
+import { EnvVarProvider } from './env-var-provider.js';
 
 describe('EnvVarProvider', function () {
   const variableName = 'SEKTEK_TEST_ENV_VAR_PROVIDER';

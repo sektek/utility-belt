@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import EnvVarBooleanProvider from './env-var-boolean-provider.js';
+import { EnvVarBooleanProvider } from './env-var-boolean-provider.js';
 
 describe('EnvVarBooleanProvider', function () {
   const variableName = 'SEKTEK_TEST_ENV_VAR_BOOLEAN_PROVIDER';

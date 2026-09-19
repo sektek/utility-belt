@@ -1,4 +1,4 @@
-import { Provider } from '../types/index.js';
+import { Predicate, Provider } from '../types/index.js';
 
 type EnvVarBooleanProviderOpts = {
   variableName: string;
@@ -8,7 +8,9 @@ type EnvVarBooleanProviderOpts = {
 /**
  * Provides a boolean value from an environment variable, with an optional default value.
  */
-class EnvVarBooleanProvider implements Provider<boolean> {
+export class EnvVarBooleanProvider
+  implements Provider<boolean>, Predicate<boolean>
+{
   #variableName: string;
   #defaultValue: boolean;
 
@@ -26,6 +28,8 @@ class EnvVarBooleanProvider implements Provider<boolean> {
 
     return value.toLowerCase() === 'true';
   }
-}
 
-export default EnvVarBooleanProvider;
+  test(): boolean {
+    return this.get();
+  }
+}
