@@ -52,6 +52,17 @@ describe('HttpOperator', function () {
       expect(response.ok).to.be.true;
     });
 
+    it('should accept a URL object as the url', async function () {
+      nock(baseUrl).get('/').reply(200, 'OK');
+
+      const operator = new HttpOperator({
+        url: new URL(url),
+      });
+
+      const response = await operator.perform();
+      expect(response.ok).to.be.true;
+    });
+
     it('should include the default content-type header', async function () {
       nock(baseUrl, { reqheaders: { 'Content-Type': 'application/json' } })
         .get('/')
