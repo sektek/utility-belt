@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.7](https://github.com/sektek/utility-belt/compare/v0.3.6...v0.3.7) (2026-10-08)
+
+### Features
+
+* HttpOperator: accept URL object for the url option ([#50](https://github.com/sektek/utility-belt/issues/50)) ([52688cf](https://github.com/sektek/utility-belt/commit/52688cf6fe3cfa42374b193124e73fb5c8b6d469))
+
 ## [0.3.6](https://github.com/sektek/utility-belt/compare/v0.3.5...v0.3.6) (2026-09-19)
 
 ### Features
