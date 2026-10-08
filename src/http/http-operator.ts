@@ -38,7 +38,7 @@ export type HttpOperatorOptions<T = void> = {
   /**
    * Static URL to send the HTTP request to. Ignored if `urlProvider` is provided.
    */
-  url?: string;
+  url?: string | URL;
 };
 
 const METHOD_DEFAULT_BODY_SERIALIZER: Record<HttpMethod, BodySerializerFn> = {
