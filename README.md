@@ -84,34 +84,34 @@ const getName = getComponent<ProviderComponent<string>, () => string>(
 
 Each interface has three related types, e.g. for `Provider`:
 
-| Type                  | What it is                                     |
-| --------------------- | ---------------------------------------------- |
-| `ProviderFn<R, T>`    | The bare function signature                    |
-| `Provider<R, T>`      | An object with a `get` method of that type     |
+| Type                      | What it is                                    |
+| ------------------------- | --------------------------------------------- |
+| `ProviderFn<R, T>`        | The bare function signature                   |
+| `Provider<R, T>`          | An object with a `get` method of that type    |
 | `ProviderComponent<R, T>` | Either of the above, for use in options types |
 
-| Interface                        | Method                  | Notes                                                                           |
-| -------------------------------- | ----------------------- | ------------------------------------------------------------------------------- |
-| `Provider<R, T = void>`          | `get(arg)`              | May be sync or async                                                            |
-| `SyncProvider<R, T = void>`      | `get(arg)`              | Must be synchronous (e.g. for constructors)                                     |
-| `OptionalProvider<R, T = void>`  | `get(arg)`              | May resolve to `undefined`                                                      |
-| `Predicate<T = void>`            | `test(value)`           | Resolves to a boolean                                                           |
-| `SyncPredicate<T = void>`        | `test(value)`           | Synchronous variant                                                             |
-| `Processor<I, O>`                | `process(input)`        | Transforms a value                                                              |
-| `Command<T, R>`                  | `execute(arg)`          | Performs an action                                                              |
-| `Mutator<T, K>`                  | `set(key, value)`       |                                                                                 |
-| `ErrorHandler<T>`                | `handle(error, ctx?)`   |                                                                                 |
-| `ExecutionStrategy<T>`           | `execute(fns, ...args)` | See [Execution strategies](#execution-strategies)                               |
-| `Collector<T>`                   | `add(item)`             | Named `add` so a `Set` qualifies                                                |
-| `IterableProvider<R, T>`         | `values(arg)`           | Named `values` so arrays, sets and maps qualify                                 |
-| `Collection<T>`                  | `add`, `values`, `clear` | `Collector` + `IterableProvider`                                               |
-| `Store<T, K = string>`           | `get/set/delete/has/keys/values/clear` | Key/value storage; a `Map` is close to compatible                |
-| `Repository<T, K = string>`      | `get/save/delete/has/includes` | Entity storage                                                           |
-| `Builder<T>`                     | `create(overrides)`     | See [`ObjectBuilder`](#objectbuilder)                                           |
-| `Startable` / `Stoppable` / `Service` | `start()` / `stop()` / both | See [Components and services](#components-and-services)                 |
-| `Named`                          | `name`                  | `{ name: string }`                                                              |
-| `EventEmittingService<Events>`   | `on`, `emit`            | Typed event emitter contract                                                    |
-| `Constructor<T>`                 | `new (...args)`         |                                                                                 |
+| Interface                             | Method                                 | Notes                                                   |
+| ------------------------------------- | -------------------------------------- | ------------------------------------------------------- |
+| `Provider<R, T = void>`               | `get(arg)`                             | May be sync or async                                    |
+| `SyncProvider<R, T = void>`           | `get(arg)`                             | Must be synchronous (e.g. for constructors)             |
+| `OptionalProvider<R, T = void>`       | `get(arg)`                             | May resolve to `undefined`                              |
+| `Predicate<T = void>`                 | `test(value)`                          | Resolves to a boolean                                   |
+| `SyncPredicate<T = void>`             | `test(value)`                          | Synchronous variant                                     |
+| `Processor<I, O>`                     | `process(input)`                       | Transforms a value                                      |
+| `Command<T, R>`                       | `execute(arg)`                         | Performs an action                                      |
+| `Mutator<T, K>`                       | `set(key, value)`                      |                                                         |
+| `ErrorHandler<T>`                     | `handle(error, ctx?)`                  |                                                         |
+| `ExecutionStrategy<T>`                | `execute(fns, ...args)`                | See [Execution strategies](#execution-strategies)       |
+| `Collector<T>`                        | `add(item)`                            | Named `add` so a `Set` qualifies                        |
+| `IterableProvider<R, T>`              | `values(arg)`                          | Named `values` so arrays, sets and maps qualify         |
+| `Collection<T>`                       | `add`, `values`, `clear`               | `Collector` + `IterableProvider`                        |
+| `Store<T, K = string>`                | `get/set/delete/has/keys/values/clear` | Key/value storage; a `Map` is close to compatible       |
+| `Repository<T, K = string>`           | `get/save/delete/has/includes`         | Entity storage                                          |
+| `Builder<T>`                          | `create(overrides)`                    | See [`ObjectBuilder`](#objectbuilder)                   |
+| `Startable` / `Stoppable` / `Service` | `start()` / `stop()` / both            | See [Components and services](#components-and-services) |
+| `Named`                               | `name`                                 | `{ name: string }`                                      |
+| `EventEmittingService<Events>`        | `on`, `emit`                           | Typed event emitter contract                            |
+| `Constructor<T>`                      | `new (...args)`                        |                                                         |
 
 Only interfaces with a single "action" method have a `*Component` type.
 
@@ -121,20 +121,20 @@ A provider produces a value, optionally from an argument. The classes below
 decorate or combine other providers; every one accepts its inner providers as
 components (object or function).
 
-| Class                                  | Behaviour                                                                                                               |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `FallbackProvider`                     | Wraps an `OptionalProvider`; when it yields `undefined`, uses `defaultValue` or `defaultValueProvider` instead          |
-| `ChainedOptionalProvider`              | Tries a list of optional providers in order; returns the first defined value, else `undefined`                          |
-| `ChainedProvider`                      | `ChainedOptionalProvider` plus a `FallbackProvider` default, so it always yields a value                                |
-| `DelegatingProvider`                   | A `selector` picks a key; the matching provider in `delegates` is invoked, else the required `default`                  |
-| `DelegatingOptionalProvider`           | Like `DelegatingProvider`, but `default` is optional and the result may be `undefined`                                  |
-| `ProcessingProvider`                   | Runs a provider's result through a `Processor`                                                                          |
-| `SingletonProvider`                    | Calls the inner provider once and caches the result (concurrent calls share one invocation); `reset()` clears the cache |
-| `TimeSensitiveProvider`                | Rejects with `Provider timed out` if the inner provider takes longer than `timeout` ms                                  |
-| `TimeSensitiveOptionalProvider`        | Resolves to `undefined` on timeout instead of rejecting                                                                 |
-| `EnvVarProvider`                       | Reads an environment variable; throws if it is not set                                                                  |
-| `EnvVarOptionalProvider`               | Reads an environment variable; `undefined` if it is not set                                                             |
-| `EnvVarBooleanProvider`                | Reads an environment variable as a boolean (`"true"`, case-insensitive); `defaultValue` (default `false`) when unset. Also usable as a `Predicate` |
+| Class                           | Behaviour                                                                                                                                          |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FallbackProvider`              | Wraps an `OptionalProvider`; when it yields `undefined`, uses `defaultValue` or `defaultValueProvider` instead                                     |
+| `ChainedOptionalProvider`       | Tries a list of optional providers in order; returns the first defined value, else `undefined`                                                     |
+| `ChainedProvider`               | `ChainedOptionalProvider` plus a `FallbackProvider` default, so it always yields a value                                                           |
+| `DelegatingProvider`            | A `selector` picks a key; the matching provider in `delegates` is invoked, else the required `default`                                             |
+| `DelegatingOptionalProvider`    | Like `DelegatingProvider`, but `default` is optional and the result may be `undefined`                                                             |
+| `ProcessingProvider`            | Runs a provider's result through a `Processor`                                                                                                     |
+| `SingletonProvider`             | Calls the inner provider once and caches the result (concurrent calls share one invocation); `reset()` clears the cache                            |
+| `TimeSensitiveProvider`         | Rejects with `Provider timed out` if the inner provider takes longer than `timeout` ms                                                             |
+| `TimeSensitiveOptionalProvider` | Resolves to `undefined` on timeout instead of rejecting                                                                                            |
+| `EnvVarProvider`                | Reads an environment variable; throws if it is not set                                                                                             |
+| `EnvVarOptionalProvider`        | Reads an environment variable; `undefined` if it is not set                                                                                        |
+| `EnvVarBooleanProvider`         | Reads an environment variable as a boolean (`"true"`, case-insensitive); `defaultValue` (default `false`) when unset. Also usable as a `Predicate` |
 
 ```ts
 import {
@@ -157,7 +157,9 @@ await port.get(); // '3000' or the value of $PORT
 const region = new ChainedProvider({
   providers: [
     new TimeSensitiveOptionalProvider({
-      provider: new HttpOptionalProvider({ url: 'https://config.example/region' }),
+      provider: new HttpOptionalProvider({
+        url: 'https://config.example/region',
+      }),
       timeout: 1000,
     }),
     new EnvVarOptionalProvider({ variableName: 'REGION' }),
@@ -195,15 +197,15 @@ await rate.get({ currency: 'EUR' });
 A predicate answers a yes/no question about a value. All predicates are
 async-friendly and short-circuit.
 
-| Class / helper                    | Result                                                                                       |
-| --------------------------------- | -------------------------------------------------------------------------------------------- |
-| `AllPredicate` / `allOf(...)`     | `true` only if every predicate passes (and there is at least one)                            |
-| `AnyPredicate` / `anyOf(...)`     | `true` if any predicate passes                                                               |
-| `NonePredicate` / `noneOf(...)`   | `true` if no predicate passes                                                                |
-| `NegatedPredicate` / `negate(p)`  | Inverts a single predicate                                                                   |
-| `DelegatingPredicate`             | A `selector` picks a key and the matching predicate in `delegates` is used, else `default` (`reject`) |
-| `AcceptPredicate` / `accept`      | Always `true`                                                                                |
-| `RejectPredicate` / `reject`      | Always `false`                                                                               |
+| Class / helper                   | Result                                                                                                |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `AllPredicate` / `allOf(...)`    | `true` only if every predicate passes (and there is at least one)                                     |
+| `AnyPredicate` / `anyOf(...)`    | `true` if any predicate passes                                                                        |
+| `NonePredicate` / `noneOf(...)`  | `true` if no predicate passes                                                                         |
+| `NegatedPredicate` / `negate(p)` | Inverts a single predicate                                                                            |
+| `DelegatingPredicate`            | A `selector` picks a key and the matching predicate in `delegates` is used, else `default` (`reject`) |
+| `AcceptPredicate` / `accept`     | Always `true`                                                                                         |
+| `RejectPredicate` / `reject`     | Always `false`                                                                                        |
 
 ```ts
 import { allOf, anyOf, negate } from '@sektek/utility-belt';
@@ -211,7 +213,10 @@ import { allOf, anyOf, negate } from '@sektek/utility-belt';
 const isAdult = (user: User) => user.age >= 18;
 const isMember = { test: async (user: User) => await lookupMembership(user) };
 
-const canEnter = allOf(isAdult, anyOf(isMember, (u: User) => u.hasTicket));
+const canEnter = allOf(
+  isAdult,
+  anyOf(isMember, (u: User) => u.hasTicket),
+);
 const isMinor = negate(isAdult);
 
 await canEnter.test(user);
@@ -226,13 +231,13 @@ An execution strategy decides _how_ a set of functions is run. Components that
 fan work out accept an `ExecutionStrategyComponent`, so callers can choose the
 policy.
 
-| Export                      | Behaviour                                                                                                                                |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `serialExecutionStrategy`   | A function; runs each function in turn, stopping at the first error                                                                      |
+| Export                      | Behaviour                                                                                                                                 |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `serialExecutionStrategy`   | A function; runs each function in turn, stopping at the first error                                                                       |
 | `ParallelExecutionStrategy` | Runs functions concurrently (optional `maxConcurrency`). Always lets every function finish, then throws an `ExecutionError` if any failed |
-| `parallelExecutionStrategy` | A function using a default (unbounded) `ParallelExecutionStrategy`                                                                       |
-| `RoundRobinStrategy`        | Each call to `execute` runs only the _next_ function in the list, cycling. Buffers the whole iterable first                              |
-| `ExecutionError`            | An `AggregateError` holding every failure (`error.errors`)                                                                               |
+| `parallelExecutionStrategy` | A function using a default (unbounded) `ParallelExecutionStrategy`                                                                        |
+| `RoundRobinStrategy`        | Each call to `execute` runs only the _next_ function in the list, cycling. Buffers the whole iterable first                               |
+| `ExecutionError`            | An `AggregateError` holding every failure (`error.errors`)                                                                                |
 
 ```ts
 import {
@@ -267,12 +272,12 @@ to satisfy with Winston, Pino or similar.
 Libraries should not take a `Logger` directly. They take a `LoggerProvider`,
 which hands out a logger for a given context:
 
-| Export                  | Description                                                                                                         |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `LoggerProvider<T>`     | A `SyncProvider<Logger, T>` with `with(context, ...contextProviders)` to derive a provider with extra context       |
-| `DefaultLoggerProvider` | Builds child loggers from a base `Logger`, merging static `context` with the results of `contextProviders`          |
-| `NullLogger`            | A `Logger` where every method is a no-op                                                                            |
-| `NullLoggerProvider`    | A `LoggerProvider` that always returns the shared `NullLogger`                                                      |
+| Export                  | Description                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `LoggerProvider<T>`     | A `SyncProvider<Logger, T>` with `with(context, ...contextProviders)` to derive a provider with extra context |
+| `DefaultLoggerProvider` | Builds child loggers from a base `Logger`, merging static `context` with the results of `contextProviders`    |
+| `NullLogger`            | A `Logger` where every method is a no-op                                                                      |
+| `NullLoggerProvider`    | A `LoggerProvider` that always returns the shared `NullLogger`                                                |
 
 ```ts
 import { DefaultLoggerProvider } from '@sektek/utility-belt';
@@ -330,8 +335,12 @@ import {
 } from '@sektek/utility-belt';
 
 class Worker extends AbstractService {
-  async start() { /* open connections */ }
-  async stop() { /* drain and close */ }
+  async start() {
+    /* open connections */
+  }
+  async stop() {
+    /* drain and close */
+  }
 }
 
 const manager = new ProcessManager({
@@ -353,13 +362,13 @@ await manager.stop();
 
 Built on the platform `fetch` API.
 
-| Export                      | Description                                                                                                                                         |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `HttpOperator`              | Performs a request with `perform(arg)` and returns the `Response`. Throws on non-2xx. Emits `request:created`, `request:error`, `response:received` and `response:error` |
-| `HttpProvider`              | A `Provider` that performs a GET and deserializes the response (JSON by default). Failures are wrapped as `Unable to obtain resource: …`            |
-| `HttpOptionalProvider`      | Like `HttpProvider`, but resolves to `undefined` if the request fails (a response that cannot be deserialized still throws)                         |
-| `CompositeHeadersProvider`  | Merges the headers of several `HeadersProvider`s                                                                                                    |
-| `contentTypeHeadersProvider(type)` | Returns a headers provider function with a fixed `Content-Type`                                                                             |
+| Export                             | Description                                                                                                                                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `HttpOperator`                     | Performs a request with `perform(arg)` and returns the `Response`. Throws on non-2xx. Emits `request:created`, `request:error`, `response:received` and `response:error` |
+| `HttpProvider`                     | A `Provider` that performs a GET and deserializes the response (JSON by default). Failures are wrapped as `Unable to obtain resource: …`                                 |
+| `HttpOptionalProvider`             | Like `HttpProvider`, but resolves to `undefined` if the request fails (a response that cannot be deserialized still throws)                                              |
+| `CompositeHeadersProvider`         | Merges the headers of several `HeadersProvider`s                                                                                                                         |
+| `contentTypeHeadersProvider(type)` | Returns a headers provider function with a fixed `Content-Type`                                                                                                          |
 
 `HttpOperator` options: `url` or `urlProvider`, `method` (`GET` by default),
 `headersProvider`, `contentType` (`application/json`), `bodySerializer`
@@ -419,14 +428,14 @@ for await (const item of queue) {
 await queue.stop();
 ```
 
-| Option                                    | Default    | Meaning                                                             |
-| ----------------------------------------- | ---------- | ------------------------------------------------------------------- |
-| `maxSize`                                 | `Infinity` | Capacity. `add` waits while the queue is full                       |
-| `maxWaitAdd`                              | `Infinity` | How long `add` waits for space before throwing                      |
-| `maxWaitStop`                             | `5000`     | How long `stop()` waits for the queue to drain before throwing      |
-| `sleepDuration`                           | `100`      | Polling interval (ms) when waiting on an empty or full queue        |
-| `sleepDurationAdd` / `sleepDurationStop`  | `sleepDuration` | Overrides for the add and stop polling intervals              |
-| `stopOnEmpty`                             | `false`    | Stop automatically once the queue is empty, ending the iteration    |
+| Option                                   | Default         | Meaning                                                          |
+| ---------------------------------------- | --------------- | ---------------------------------------------------------------- |
+| `maxSize`                                | `Infinity`      | Capacity. `add` waits while the queue is full                    |
+| `maxWaitAdd`                             | `Infinity`      | How long `add` waits for space before throwing                   |
+| `maxWaitStop`                            | `5000`          | How long `stop()` waits for the queue to drain before throwing   |
+| `sleepDuration`                          | `100`           | Polling interval (ms) when waiting on an empty or full queue     |
+| `sleepDurationAdd` / `sleepDurationStop` | `sleepDuration` | Overrides for the add and stop polling intervals                 |
+| `stopOnEmpty`                            | `false`         | Stop automatically once the queue is empty, ending the iteration |
 
 Only one iteration can be active at a time. `add` throws once the queue is
 stopped, until `start()` is called again.
@@ -479,17 +488,17 @@ await jobs.create({ options: { retries: 0 } });
 
 ## Other utilities
 
-| Export                  | Description                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `sleep(ms)`             | A promise that resolves after `ms`; the result has `cancel()` to resolve it early and clear the timer |
-| `noOp`                  | A function that does nothing                                                                        |
-| `isA<T>(obj, fnName)`   | Type guard: `obj` is a non-primitive with a function named `fnName`                                 |
-| `isFunction(value)`     | Type guard for functions                                                                            |
-| `isPrimitive(value)`    | `true` if `value` is not an object (or function)                                                    |
-| `isError(value)`        | Type guard for `Error` instances                                                                    |
-| `isNamed(value)`        | Type guard for objects with a string `name`                                                         |
-| `isStartable(value)` / `isStoppable(value)` | Type guards for objects with a `start` / `stop` method                          |
-| `InvalidComponentError` | Thrown by `getComponent`; exposes the offending `component`                                         |
+| Export                                      | Description                                                                                           |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `sleep(ms)`                                 | A promise that resolves after `ms`; the result has `cancel()` to resolve it early and clear the timer |
+| `noOp`                                      | A function that does nothing                                                                          |
+| `isA<T>(obj, fnName)`                       | Type guard: `obj` is a non-primitive with a function named `fnName`                                   |
+| `isFunction(value)`                         | Type guard for functions                                                                              |
+| `isPrimitive(value)`                        | `true` if `value` is not an object (or function)                                                      |
+| `isError(value)`                            | Type guard for `Error` instances                                                                      |
+| `isNamed(value)`                            | Type guard for objects with a string `name`                                                           |
+| `isStartable(value)` / `isStoppable(value)` | Type guards for objects with a `start` / `stop` method                                                |
+| `InvalidComponentError`                     | Thrown by `getComponent`; exposes the offending `component`                                           |
 
 ```ts
 const nap = sleep(60_000);
