@@ -324,5 +324,17 @@ describe('FilteringIterableProvider', function () {
         'predicate',
       );
     });
+
+    it('should throw when both predicate and predicateProvider are given', function () {
+      const opts = {
+        provider: () => [1],
+        predicate: () => true,
+        predicateProvider: () => () => true,
+      } as unknown as FilteringIterableProviderOptions<number>;
+
+      expect(() => new FilteringIterableProvider<number>(opts)).to.throw(
+        'Only one',
+      );
+    });
   });
 });

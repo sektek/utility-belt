@@ -54,10 +54,15 @@ export class FilteringIterableProvider<R, T = void> implements IterableProvider<
   /**
    * @param opts - The wrapped provider and the predicate or predicate provider.
    *
-   * @throws {Error} If neither `predicate` nor `predicateProvider` is given.
+   * @throws {Error} If neither or both of `predicate` and `predicateProvider`
+   *   are given.
    */
   constructor(opts: FilteringIterableProviderOptions<R, T>) {
     this.#provider = getComponent(opts.provider, 'values');
+
+    if (opts.predicate !== undefined && opts.predicateProvider !== undefined) {
+      throw new Error('Only one of predicate or predicateProvider is allowed');
+    }
 
     if (opts.predicate !== undefined) {
       const predicate: PredicateFn<R> = getComponent(opts.predicate, 'test');
