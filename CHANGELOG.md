@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.9](https://github.com/sektek/utility-belt/compare/v0.3.8...v0.3.9) (2026-10-25)
+
+### Features
+
+* **utility-belt:** add FilteringIterableProvider ([#54](https://github.com/sektek/utility-belt/issues/54)) ([b879115](https://github.com/sektek/utility-belt/commit/b8791154984eba095a3763722f56452fe33b7408))
+
 ## [0.3.8](https://github.com/sektek/utility-belt/compare/v0.3.7...v0.3.8) (2026-10-25)
 
 ### Features
