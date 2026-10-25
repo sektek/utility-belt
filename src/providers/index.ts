@@ -6,6 +6,7 @@ export * from './env-var-boolean-provider.js';
 export * from './env-var-optional-provider.js';
 export * from './env-var-provider.js';
 export * from './fallback-provider.js';
+export * from './filtering-iterable-provider.js';
 export * from './processing-iterable-provider.js';
 export * from './processing-provider.js';
 export * from './singleton-provider.js';
