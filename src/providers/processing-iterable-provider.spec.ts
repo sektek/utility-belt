@@ -197,4 +197,22 @@ describe('ProcessingIterableProvider', function () {
 
     expect(await collect(provider.values())).to.deep.equal(['n1', 'n2']);
   });
+
+  it('should accept an array as the provider', async function () {
+    const provider = new ProcessingIterableProvider<number, string>({
+      provider: [1, 2, 3],
+      processor: (input: number) => `n${input}`,
+    });
+
+    expect(await collect(provider.values())).to.deep.equal(['n1', 'n2', 'n3']);
+  });
+
+  it('should accept a set as the provider', async function () {
+    const provider = new ProcessingIterableProvider<number, string>({
+      provider: new Set([1, 2, 3]),
+      processor: (input: number) => `n${input}`,
+    });
+
+    expect(await collect(provider.values())).to.deep.equal(['n1', 'n2', 'n3']);
+  });
 });
