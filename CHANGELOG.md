@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.8](https://github.com/sektek/utility-belt/compare/v0.3.7...v0.3.8) (2026-10-25)
+
+### Features
+
+* **utility-belt:** add ProcessingIterableProvider ([#53](https://github.com/sektek/utility-belt/issues/53)) ([be229d9](https://github.com/sektek/utility-belt/commit/be229d98231cf020f61ae4a4ed55b52f5381715c))
+
 ## [0.3.7](https://github.com/sektek/utility-belt/compare/v0.3.6...v0.3.7) (2026-10-08)
 
 ### Features
