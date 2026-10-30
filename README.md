@@ -34,10 +34,12 @@ const resource = singleton(async () => {
   return { name: 'shared resource' };
 });
 
-const first = await resource.get();
-const second = await resource.get();
+const first = resource.get();
+const second = resource.get();
 
-console.log(first === second); // true
+const [a, b] = await Promise.all([first, second]);
+
+console.log(a === b); // true
 console.log(connections); // 1
 ```
 
