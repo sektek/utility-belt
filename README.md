@@ -6,7 +6,7 @@ Utility Belt provides reusable, composable TypeScript building blocks for resolv
 
 | Need | Start with |
 | --- | --- |
-| Resolve configuration with fallbacks or timeouts | [Providers](docs/reference.md#providers) |
+| Resolve values or dependencies with caching, fallbacks, or timeouts | [Providers](docs/reference.md#providers) |
 | Combine authorization or validation decisions | [Predicates](docs/reference.md#predicates) |
 | Control serial, parallel, or bounded-concurrency execution | [Execution strategies](docs/reference.md#execution-strategies) |
 | Start and stop services as a group | [ProcessManager](docs/reference.md#abstractservice-and-processmanager) |
@@ -22,20 +22,26 @@ The package uses ESM and exports its public API from the package root.
 
 ## Quick examples
 
-### Resolve a setting with a fallback
+### Reuse a resource without changing its consumer
 
 ```ts
-import { EnvVarOptionalProvider, FallbackProvider } from '@sektek/utility-belt';
+import { singleton } from '@sektek/utility-belt';
 
-const port = new FallbackProvider({
-  provider: new EnvVarOptionalProvider({ variableName: 'PORT' }),
-  defaultValue: '3000',
+let connections = 0;
+
+const resource = singleton(async () => {
+  connections += 1;
+  return { name: 'shared resource' };
 });
 
-console.log(await port.get()); // PORT, or '3000' when unset
+const first = await resource.get();
+const second = await resource.get();
+
+console.log(first === second); // true
+console.log(connections); // 1
 ```
 
-Providers can also be chained, timed out, or cached without changing the consumer. See the [remote configuration → environment → default example](docs/reference.md#providers).
+A provider is a contract for obtaining a value, not a configuration-specific abstraction. Consumers can depend on that contract while implementations retrieve, transform, cache, time-limit, or fall back to other sources. See [provider composition and fallback examples](docs/reference.md#providers).
 
 ### Combine decisions
 
@@ -76,7 +82,7 @@ Parallel execution waits for all tasks to finish and aggregates failures. Use [s
 
 A **Provider** obtains a value. A **Predicate** answers a yes/no question. A **Processor** transforms an input. A **Command** performs an action. An **ExecutionStrategy** decides how functions are scheduled. A **Component** contract often accepts either a function or an object with the relevant method.
 
-Consumers depend on behavior, not a particular class. You can start with a function, substitute a provider that fetches remotely, and then wrap it with caching or fallback behavior without rewriting the consumer. That flexibility adds indirection, so prefer the smallest composition that solves a real problem. The [core contracts and component resolution reference](docs/reference.md#core-concepts) explains the types and method resolution rules.
+Consumers depend on behavior, not a particular class. You can start with a function, substitute a provider that looks up a resource, and then wrap it with caching or fallback behavior without rewriting the consumer. That flexibility adds indirection, so prefer the smallest composition that solves a real problem. The [core contracts and component resolution reference](docs/reference.md#core-concepts) explains the types and method resolution rules.
 
 ## Design philosophy
 
