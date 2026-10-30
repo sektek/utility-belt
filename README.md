@@ -84,6 +84,30 @@ Parallel execution waits for all tasks to finish and aggregates failures. Use [s
 
 A **Provider** obtains a value. A **Predicate** answers a yes/no question. A **Processor** transforms an input. A **Command** performs an action. An **ExecutionStrategy** decides how functions are scheduled. A **Component** contract often accepts either a function or an object with the relevant method.
 
+For example, the same consumer can accept either a function or an object with a `get` method:
+
+```ts
+import { ProviderComponent, ProviderFn, getComponent } from '@sektek/utility-belt';
+
+class Greeter {
+  #getName: ProviderFn<string>;
+
+  constructor(nameProvider: ProviderComponent<string>) {
+    this.#getName = getComponent(nameProvider, 'get');
+  }
+
+  async greet() {
+    return `Hello, ${await this.#getName()}!`;
+  }
+}
+
+const fromFunction = new Greeter(() => 'Ada');
+const fromObject = new Greeter({ get: () => 'Grace' });
+
+console.log(await fromFunction.greet()); // Hello, Ada!
+console.log(await fromObject.greet()); // Hello, Grace!
+```
+
 Consumers depend on behavior, not a particular class. You can start with a function, substitute a provider that looks up a resource, and then wrap it with caching or fallback behavior without rewriting the consumer. That flexibility adds indirection, so prefer the smallest composition that solves a real problem. The [core contracts and component resolution reference](docs/reference.md#core-concepts) explains the types and method resolution rules.
 
 ## Design philosophy
