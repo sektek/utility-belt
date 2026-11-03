@@ -130,7 +130,7 @@ components (object or function).
 | `FallbackProvider`              | Wraps an `OptionalProvider`; when it yields `undefined`, uses `defaultValue` or `defaultValueProvider` instead                                     |
 | `ChainedOptionalProvider`       | Tries a list of optional providers in order; returns the first defined value, else `undefined`                                                     |
 | `ChainedProvider`               | `ChainedOptionalProvider` plus a `FallbackProvider` default, so it always yields a value                                                           |
-| `NotFoundHandlingProvider`      | Wraps a `Provider`; resolves to `undefined` when it throws `ResourceNotFoundError`, and rethrows any other error                                   |
+| `NotFoundHandlingProvider`      | Wraps a `Provider`; resolves to `undefined` when it throws `ResourceNotFoundError`, and rethrows any other error. `optional(provider)` is shorthand for `NotFoundHandlingProvider.wrap(provider)`                                   |
 | `DelegatingProvider`            | A `selector` picks a key; the matching provider in `delegates` is invoked, else the required `default`                                             |
 | `DelegatingOptionalProvider`    | Like `DelegatingProvider`, but `default` is optional and the result may be `undefined`                                                             |
 | `ProcessingProvider`            | Runs a provider's result through a `Processor`                                                                                                     |

@@ -1,7 +1,10 @@
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
-import { NotFoundHandlingProvider } from './not-found-handling-provider.js';
+import {
+  NotFoundHandlingProvider,
+  optional,
+} from './not-found-handling-provider.js';
 import { ResourceNotFoundError } from '../errors/index.js';
 
 use(chaiAsPromised);
@@ -59,5 +62,22 @@ describe('NotFoundHandlingProvider', function () {
     await provider.get('x');
 
     expect(received).to.deep.equal(['x']);
+  });
+
+  describe('optional', function () {
+    it('wraps a provider in a NotFoundHandlingProvider', async function () {
+      const provider = optional((id: string): string => {
+        throw new ResourceNotFoundError({ id });
+      });
+
+      expect(provider).to.be.instanceOf(NotFoundHandlingProvider);
+      expect(await provider.get('a')).to.be.undefined;
+    });
+
+    it('passes through values from the wrapped provider', async function () {
+      const provider = optional({ get: (id: string) => `value-${id}` });
+
+      expect(await provider.get('a')).to.equal('value-a');
+    });
   });
 });

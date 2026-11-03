@@ -38,6 +38,18 @@ export class NotFoundHandlingProvider<R, T = void> implements OptionalProvider<
   }
 
   /**
+   * Wraps a provider component into a NotFoundHandlingProvider.
+   *
+   * @param provider - The provider component to wrap.
+   * @returns An instance of NotFoundHandlingProvider.
+   */
+  static wrap<R, T = void>(
+    provider: ProviderComponent<R, T>,
+  ): NotFoundHandlingProvider<R, T> {
+    return new NotFoundHandlingProvider<R, T>({ provider });
+  }
+
+  /**
    * @param arg - The argument to pass to the wrapped provider.
    * @returns The wrapped provider's value, or `undefined` when it throws a
    *   {@link ResourceNotFoundError}.
@@ -54,3 +66,14 @@ export class NotFoundHandlingProvider<R, T = void> implements OptionalProvider<
     }
   }
 }
+
+/**
+ * Wraps a provider so that a {@link ResourceNotFoundError} becomes an
+ * `undefined` result, turning it into an optional provider.
+ *
+ * @param provider - The provider component to wrap.
+ * @returns A {@link NotFoundHandlingProvider} wrapping the provider.
+ */
+export const optional = <R, T = void>(
+  provider: ProviderComponent<R, T>,
+): NotFoundHandlingProvider<R, T> => NotFoundHandlingProvider.wrap(provider);
