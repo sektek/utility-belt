@@ -8,6 +8,7 @@ export * from './env-var-provider.js';
 export * from './fallback-provider.js';
 export * from './filtering-iterable-provider.js';
 export * from './processing-iterable-provider.js';
+export * from './not-found-handling-provider.js';
 export * from './processing-provider.js';
 export * from './singleton-provider.js';
 export * from './time-sensitive-optional-provider.js';
