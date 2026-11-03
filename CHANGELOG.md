@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.10](https://github.com/sektek/utility-belt/compare/v0.3.9...v0.3.10) (2026-11-03)
+
+### Features
+
+* **utility-belt:** add ResourceNotFoundError and NotFoundHandlingProvider ([#56](https://github.com/sektek/utility-belt/issues/56)) ([319b7ae](https://github.com/sektek/utility-belt/commit/319b7ae6b40361cdf4d06e135b1d77d70a0122be))
+
 ## [0.3.9](https://github.com/sektek/utility-belt/compare/v0.3.8...v0.3.9) (2026-10-25)
 
 ### Features
