@@ -112,7 +112,7 @@ Each interface has three related types, e.g. for `Provider`:
 | `Store<T, K = string>`                | `get/set/delete/has/keys/values/clear` | Key/value storage; a `Map` is close to compatible       |
 | `Repository<T, K = string>`           | `get/save/delete/has/includes`         | Entity storage                                          |
 | `Builder<T>`                          | `create(overrides)`                    | See [`ObjectBuilder`](#objectbuilder)                   |
-| `Startable` / `Stoppable` / `Service` | `start()` / `stop()` / both            | See [Components and services](#components-and-services) |
+| `Startable` / `Stoppable` / `Service` | `start()` / `stop()` / both, plus `on` and `emit` | Emit lifecycle events; see [`AbstractService` and `ProcessManager`](#abstractservice-and-processmanager) |
 | `Named`                               | `name`                                 | `{ name: string }`                                      |
 | `EventEmittingService<Events>`        | `on`, `emit`                           | Typed event emitter contract                            |
 | `Constructor<T>`                      | `new (...args)`                        |                                                         |
@@ -321,7 +321,7 @@ class Mailer extends AbstractComponent<{ to: string }> {
 
 ### `AbstractService` and `ProcessManager`
 
-`AbstractService` extends `AbstractComponent` with no-op `start()` and
+`AbstractService` extends `AbstractComponent` with default `start()` and
 `stop()` methods for subclasses to override. On construction it registers
 itself with a `ProcessManager`, passed as `processManager` or else created
 internally.
@@ -332,19 +332,38 @@ through an execution strategy (serial by default), with optional per-service
 registers SIGTERM/SIGINT listeners so services stop on shutdown, and removes
 them when nothing is left to stop.
 
+Every `Startable`, `Stoppable` and `Service` is also an event emitter, so
+you can observe the lifecycle of a service or of a whole manager.
+
 ```ts
 import {
   AbstractService,
   ParallelExecutionStrategy,
   ProcessManager,
+  SERVICE_START_ERROR,
+  SERVICE_STARTED,
+  SERVICE_STOP_ERROR,
+  SERVICE_STOPPED,
 } from '@sektek/utility-belt';
 
 class Worker extends AbstractService {
   async start() {
-    /* open connections */
+    try {
+      /* open connections */
+    } catch (error) {
+      this.emit(SERVICE_START_ERROR, error);
+      throw error;
+    }
+    this.emit(SERVICE_STARTED);
   }
   async stop() {
-    /* drain and close */
+    try {
+      /* drain and close */
+    } catch (error) {
+      this.emit(SERVICE_STOP_ERROR, error);
+      throw error;
+    }
+    this.emit(SERVICE_STOPPED);
   }
 }
 
@@ -355,6 +374,9 @@ const manager = new ProcessManager({
   maxStopWaitMs: 3000,
 });
 
+manager.on(SERVICE_STARTED, () => console.log('app is up'));
+manager.on(SERVICE_START_ERROR, error => console.error('app failed', error));
+
 new Worker({ processManager: manager });
 new Worker({ processManager: manager });
 
@@ -362,6 +384,142 @@ await manager.start();
 // SIGTERM or SIGINT now calls manager.stop(), or call it yourself:
 await manager.stop();
 ```
+
+A subclass that overrides `start()` or `stop()` replaces the default
+implementation, so it must emit the lifecycle events itself, as `Worker`
+does. The defaults inherited from `AbstractService` are no-ops that emit
+`service:started` and `service:stopped`.
+
+#### Lifecycle events
+
+| Event                | Constant              | Emitted when        | Listener arguments |
+| -------------------- | --------------------- | ------------------- | ------------------ |
+| `service:started`    | `SERVICE_STARTED`     | `start()` completed | none               |
+| `service:stopped`    | `SERVICE_STOPPED`     | `stop()` completed  | none               |
+| `service:startError` | `SERVICE_START_ERROR` | `start()` failed    | `(error)`          |
+| `service:stopError`  | `SERVICE_STOP_ERROR`  | `stop()` failed     | `(error)`          |
+
+Use the constants rather than the string values when emitting or listening.
+
+The event types are exported as `StartableEvents`, `StoppableEvents` and
+`ServiceEvents`, their intersection. `ProcessManagerEvents` is an alias of
+`ServiceEvents`.
+
+`ProcessManager` emits the events for its own outcome:
+
+- `service:started` or `service:stopped` once the execution strategy has
+  finished every service.
+- `service:startError` or `service:stopError` when `start()` or `stop()`
+  rejects. The event carries the same error that the call rejects with. With
+  the serial strategy, that is the original error of the first failing service
+  (or the timeout error). With `ParallelExecutionStrategy`, it is an
+  `ExecutionError` whose `errors` array holds every failure.
+
+If a service rejects with something that is not an `Error` (a string, say), the
+call still rethrows that value, but the event carries an `Error` that wraps it
+as its `cause`, so listeners always receive an `Error`.
+
+A manager never forwards the events of its services. A failure is reported at
+every level of nesting: the failing service emits `service:startError`, the
+manager that runs it emits its own `service:startError`, and so does that
+manager's parent. To be alerted to a failure anywhere in the tree, subscribe to
+the outermost manager.
+
+`Queue` emits `service:started` and `service:stopped`, and `service:stopError`
+when `stop()` times out. Its `start()` cannot fail, so it never emits
+`service:startError`.
+
+#### `ProcessManager` options
+
+`ProcessManagerOptions` combines `ServiceOptions`, `StartableOptions` and
+`StoppableOptions`, and adds `executionStrategy` and `stopOnError`, which belong
+to `ProcessManager` alone:
+
+| Option              | Default    | Meaning                                                                                              |
+| ------------------- | ---------- | ---------------------------------------------------------------------------------------------------- |
+| `executionStrategy` | serial     | How services are started and stopped                                                                 |
+| `processManager`    | none       | A parent manager to register with; this manager then installs no signal listeners (`ServiceOptions`) |
+| `maxStartWaitMs`    | `Infinity` | Per-service deadline for `start()` (`StartableOptions`)                                              |
+| `maxStopWaitMs`     | `Infinity` | Per-service deadline for `stop()` (`StoppableOptions`)                                               |
+| `stopOnError`       | `false`    | Stop the services that already started when another fails to start                                   |
+
+With `stopOnError`, a failed `start()` stops only the services whose `start()`
+had resolved (not the failing one, and not services whose start never ran),
+then rethrows the original start error. The rollback uses the same execution
+strategy and `maxStopWaitMs` as `stop()`. If there is anything to stop, the
+manager emits `service:stopped` (or `service:stopError`) before
+`service:startError`. With the parallel strategy, every in-flight start settles
+before the rollback. A failure during the rollback is emitted as
+`service:stopError` and logged, but never replaces the start error. Without the
+option, services that started stay running.
+
+```ts
+const manager = new ProcessManager({ name: 'app', stopOnError: true });
+manager.on(SERVICE_STOPPED, () => console.log('rolled back'));
+manager.on(SERVICE_START_ERROR, error => console.error('start failed', error));
+```
+
+#### Calling `start()` and `stop()` more than once
+
+`stop()` is registered as the SIGTERM/SIGINT listener, so it can be called
+by a signal and by your code at the same time. Both methods are idempotent:
+
+- Concurrent calls share the single in-flight run, so every caller sees the
+  same outcome: the same resolution, or the same rejection.
+- A call after a successful run resolves immediately without starting or
+  stopping the services again. A manager that was never started can still be
+  stopped, and `start()` after a completed `stop()` starts the services again.
+- A failed run, including one rolled back by `stopOnError`, does not count,
+  so it can be retried.
+- Adding a `Stoppable` after a completed stop makes the next `stop()` run
+  again, so the new service is stopped too.
+- Lifecycle events are emitted once per run, not once per call.
+
+Some cases are not handled yet:
+
+- Calling `start()` while `stop()` is in flight (or the reverse) is not
+  coordinated: the two runs proceed independently.
+- Signal listeners are registered when a stoppable is added and removed by
+  `stop()`, so after a `stop()` and a restart the manager no longer handles
+  signals until a stoppable is added again.
+- A service added after `start()` has begun is not started by that run, and a
+  later `start()` does nothing once the manager has started. `stop()` still
+  stops it if it is stoppable. Add services before you call `start()`.
+
+#### Migrating `Startable` and `Stoppable` implementers
+
+`Startable`, `Stoppable` and `Service` now extend `EventEmittingService`, and
+`isStartable` / `isStoppable` require `on` and `emit` in addition to `start`
+or `stop`. Implementers must therefore be typed event emitters.
+
+A plain object with `start`/`stop` but no `on`/`emit` is silently not
+registered by `ProcessManager.add()`: it is never started or stopped, and
+no error is raised.
+
+```ts
+// Before: accepted by ProcessManager.add()
+const database = {
+  async start() {},
+  async stop() {},
+};
+
+// After: extend an event emitter (or AbstractService) and emit the events
+import { EventEmitter } from 'eventemitter3';
+import { SERVICE_STARTED, SERVICE_STOPPED } from '@sektek/utility-belt';
+
+class Database extends EventEmitter {
+  async start() {
+    this.emit(SERVICE_STARTED);
+  }
+  async stop() {
+    this.emit(SERVICE_STOPPED);
+  }
+}
+```
+
+`EventEmitter` here is the one from `eventemitter3`, which this package already
+depends on. For an object you cannot subclass,
+`Object.assign(new EventEmitter(), { start, stop })` works.
 
 ## HTTP
 
@@ -502,7 +660,7 @@ await jobs.create({ options: { retries: 0 } });
 | `isPrimitive(value)`                        | `true` if `value` is not an object (or function)                                                      |
 | `isError(value)`                            | Type guard for `Error` instances                                                                      |
 | `isNamed(value)`                            | Type guard for objects with a string `name`                                                           |
-| `isStartable(value)` / `isStoppable(value)` | Type guards for objects with a `start` / `stop` method                                                |
+| `isStartable(value)` / `isStoppable(value)` | Type guards for objects with `start` / `stop` and `on` / `emit` methods                                              |
 | `InvalidComponentError`                     | Thrown by `getComponent`; exposes the offending `component`                                           |
 | `ResourceNotFoundError`                     | Thrown by a `Provider` when the requested resource does not exist; exposes `resource` and `id`        |
 
