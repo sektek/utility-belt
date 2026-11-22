@@ -3,6 +3,12 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import sinonChai from 'sinon-chai';
 
+import {
+  SERVICE_STARTED,
+  SERVICE_START_ERROR,
+  SERVICE_STOPPED,
+  SERVICE_STOP_ERROR,
+} from './types/index.js';
 import { Queue } from './queue.js';
 
 use(chaiAsPromised);
@@ -211,5 +217,73 @@ describe('Queue', function () {
     await expect(queue.stop()).to.be.rejectedWith(
       'Queue stop timeout exceeded',
     );
+  });
+
+  describe('lifecycle events', function () {
+    it('should emit service:started on start()', function () {
+      const queue = new Queue<number>();
+      const started = sinon.fake();
+      const startError = sinon.fake();
+      queue.on(SERVICE_STARTED, started);
+      queue.on(SERVICE_START_ERROR, startError);
+
+      queue.start();
+
+      expect(started).to.have.been.calledOnce;
+      expect(startError).to.not.have.been.called;
+    });
+
+    it('should emit service:stopped once the queue has drained', async function () {
+      const queue = new Queue<number>({ sleepDurationStop: 10 });
+      const stopped = sinon.fake();
+      const stopError = sinon.fake();
+      queue.on(SERVICE_STOPPED, stopped);
+      queue.on(SERVICE_STOP_ERROR, stopError);
+      await queue.add(1);
+
+      const stopPromise = queue.stop();
+      expect(stopped).to.not.have.been.called;
+      const drained: number[] = [];
+      for await (const item of queue) {
+        drained.push(item);
+      }
+      await stopPromise;
+
+      expect(drained).to.deep.equal([1]);
+
+      expect(stopped).to.have.been.calledOnce;
+      expect(stopError).to.not.have.been.called;
+    });
+
+    it('should emit service:stopped when stopping an empty queue', async function () {
+      const queue = new Queue<number>();
+      const stopped = sinon.fake();
+      queue.on(SERVICE_STOPPED, stopped);
+
+      await queue.stop();
+
+      expect(stopped).to.have.been.calledOnce;
+    });
+
+    it('should emit service:stopError with the timeout error and reject with it', async function () {
+      const queue = new Queue<number>({
+        maxWaitStop: 100,
+        sleepDurationStop: 50,
+      });
+      const stopped = sinon.fake();
+      const stopError = sinon.fake();
+      queue.on(SERVICE_STOPPED, stopped);
+      queue.on(SERVICE_STOP_ERROR, stopError);
+      await queue.add(1);
+
+      const error = await queue.stop().then(
+        () => undefined,
+        (err: Error) => err,
+      );
+
+      expect(error?.message).to.equal('Queue stop timeout exceeded');
+      expect(stopError).to.have.been.calledOnceWithExactly(error);
+      expect(stopped).to.not.have.been.called;
+    });
   });
 });
