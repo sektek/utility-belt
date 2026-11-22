@@ -1,6 +1,12 @@
 import {
+  EventEmittingService,
   ExecutionStrategyComponent,
   ExecutionStrategyFn,
+  SERVICE_STARTED,
+  SERVICE_START_ERROR,
+  SERVICE_STOPPED,
+  SERVICE_STOP_ERROR,
+  ServiceEvents,
   Startable,
   StartableOptions,
   Stoppable,
@@ -14,6 +20,12 @@ import { isStartable } from './guards/is-startable.js';
 import { isStoppable } from './guards/is-stoppable.js';
 import { serialExecutionStrategy } from './execution-strategies/index.js';
 
+/**
+ * Lifecycle events emitted by a {@link ProcessManager}; the same as
+ * {@link ServiceEvents}.
+ */
+export type ProcessManagerEvents = ServiceEvents;
+
 export type ProcessManagerOptions = ServiceOptions &
   StartableOptions &
   StoppableOptions & {
@@ -24,6 +36,22 @@ export type ProcessManagerOptions = ServiceOptions &
      */
     executionStrategy?: ExecutionStrategyComponent;
   };
+
+/**
+ * Returns `thrown` if it is an `Error`, otherwise an `Error` that wraps it as
+ * its `cause`. Anything can be thrown or used to reject a promise, but the
+ * error events promise their listeners an `Error`.
+ *
+ * @param thrown - The value a service threw or rejected with.
+ * @returns `thrown` itself when it is an `Error`, otherwise a wrapping `Error`.
+ */
+function toError(thrown: unknown): Error {
+  if (thrown instanceof Error) {
+    return thrown;
+  }
+
+  return new Error(String(thrown), { cause: thrown });
+}
 
 /**
  * Manages the lifecycle of a collection of `Startable` and `Stoppable` services,
@@ -37,6 +65,13 @@ export type ProcessManagerOptions = ServiceOptions &
  * corresponding call to reject if an individual service has not completed within
  * the allotted time. If the timed-out service implements `Named`, its name is
  * included in the error message.
+ *
+ * The manager emits {@link ProcessManagerEvents} describing its own outcome:
+ * `service:started`/`service:stopped` once the execution strategy resolves, and
+ * `service:startError`/`service:stopError` when it rejects. The call rethrows
+ * the rejection unchanged; the event carries the same object when it is an
+ * `Error`, and otherwise an `Error` wrapping it as its `cause`. Events of the
+ * registered services are not forwarded.
  *
  * When constructed without a parent `processManager`, SIGTERM/SIGINT listeners
  * are registered lazily on the first `Stoppable` added, and removed again once
@@ -55,7 +90,10 @@ export type ProcessManagerOptions = ServiceOptions &
  * // … later …
  * await manager.stop();
  */
-export class ProcessManager extends AbstractComponent {
+export class ProcessManager
+  extends AbstractComponent
+  implements EventEmittingService<ProcessManagerEvents>
+{
   #executionStrategy: ExecutionStrategyFn;
   #maxStartWaitMs: number;
   #maxStopWaitMs: number;
@@ -148,31 +186,39 @@ export class ProcessManager extends AbstractComponent {
    * If `maxStartWaitMs` is set, each individual service must complete within that limit.
    *
    * @throws {Error} If any service's `start()` rejects, or if a service exceeds `maxStartWaitMs`.
+   * The rejection is emitted as `service:startError` and rethrown unchanged.
    */
   async start(): Promise<void> {
     const logger = this.logger();
     logger.info('starting services', { count: this.#startables.size });
-    await this.#executionStrategy(
-      [...this.#startables].map(
-        s => () =>
-          this.#withTimeout(
-            async () => {
-              const serviceName = isNamed(s) ? s.name : undefined;
-              const startTime = Date.now();
-              logger.info('starting service', { service: serviceName });
-              await s.start();
-              const duration = Date.now() - startTime;
-              logger.info('service started', {
-                service: serviceName,
-                durationMs: duration,
-              });
-            },
-            this.#maxStartWaitMs,
-            'start',
-            s,
-          ),
-      ),
-    );
+    try {
+      await this.#executionStrategy(
+        [...this.#startables].map(
+          s => () =>
+            this.#withTimeout(
+              async () => {
+                const serviceName = isNamed(s) ? s.name : undefined;
+                const startTime = Date.now();
+                logger.info('starting service', { service: serviceName });
+                await s.start();
+                const duration = Date.now() - startTime;
+                logger.info('service started', {
+                  service: serviceName,
+                  durationMs: duration,
+                });
+              },
+              this.#maxStartWaitMs,
+              'start',
+              s,
+            ),
+        ),
+      );
+    } catch (error) {
+      this.emit(SERVICE_START_ERROR, toError(error));
+      throw error;
+    }
+
+    this.emit(SERVICE_STARTED);
   }
 
   /**
@@ -181,32 +227,40 @@ export class ProcessManager extends AbstractComponent {
    * If this manager owns SIGTERM/SIGINT listeners, they are removed.
    *
    * @throws {Error} If any service's `stop()` rejects, or if a service exceeds `maxStopWaitMs`.
+   * The rejection is emitted as `service:stopError` and rethrown unchanged.
    */
   async stop(): Promise<void> {
     const logger = this.logger();
     logger.info('stopping services', { count: this.#stoppables.size });
     this.#unregisterSignalListener();
-    await this.#executionStrategy(
-      [...this.#stoppables].map(
-        s => () =>
-          this.#withTimeout(
-            async () => {
-              const serviceName = isNamed(s) ? s.name : undefined;
-              const startTime = Date.now();
-              logger.info('stopping service', { service: serviceName });
-              await s.stop();
-              const duration = Date.now() - startTime;
-              logger.info('service stopped', {
-                service: serviceName,
-                durationMs: duration,
-              });
-            },
-            this.#maxStopWaitMs,
-            'stop',
-            s,
-          ),
-      ),
-    );
+    try {
+      await this.#executionStrategy(
+        [...this.#stoppables].map(
+          s => () =>
+            this.#withTimeout(
+              async () => {
+                const serviceName = isNamed(s) ? s.name : undefined;
+                const startTime = Date.now();
+                logger.info('stopping service', { service: serviceName });
+                await s.stop();
+                const duration = Date.now() - startTime;
+                logger.info('service stopped', {
+                  service: serviceName,
+                  durationMs: duration,
+                });
+              },
+              this.#maxStopWaitMs,
+              'stop',
+              s,
+            ),
+        ),
+      );
+    } catch (error) {
+      this.emit(SERVICE_STOP_ERROR, toError(error));
+      throw error;
+    }
+
+    this.emit(SERVICE_STOPPED);
   }
 
   async #withTimeout(
