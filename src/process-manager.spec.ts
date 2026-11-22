@@ -637,6 +637,190 @@ describe('ProcessManager', function () {
     });
   });
 
+  describe('stopOnError', function () {
+    let log: string[];
+
+    const record = (target: ProcessManager, label: string) => {
+      target.on(SERVICE_STARTED, () => log.push(`${label}:started`));
+      target.on(SERVICE_STOPPED, () => log.push(`${label}:stopped`));
+      target.on(SERVICE_START_ERROR, () => log.push(`${label}:startError`));
+      target.on(SERVICE_STOP_ERROR, () => log.push(`${label}:stopError`));
+    };
+
+    beforeEach(function () {
+      log = [];
+    });
+
+    it('leaves started services running by default', async function () {
+      const stop = sinon.stub().resolves();
+      manager = new ProcessManager({ name: 'test' });
+      manager.add(emitting({ start: sinon.stub().resolves(), stop }));
+      manager.add(emitting({ start: () => Promise.reject(new Error('boom')) }));
+      await expect(manager.start()).to.be.rejectedWith('boom');
+      expect(stop.called).to.be.false;
+    });
+
+    it('stops the started services and rethrows the original error', async function () {
+      const error = new Error('boom');
+      const firstStop = sinon.stub().resolves();
+      const failingStop = sinon.stub().resolves();
+      const neverStartedStop = sinon.stub().resolves();
+      const neverStarted = sinon.stub().resolves();
+      manager = new ProcessManager({ name: 'test', stopOnError: true });
+      manager.add(
+        emitting({ start: sinon.stub().resolves(), stop: firstStop }),
+      );
+      manager.add(
+        emitting({ start: () => Promise.reject(error), stop: failingStop }),
+      );
+      manager.add(emitting({ start: neverStarted, stop: neverStartedStop }));
+      const rejection = await manager.start().catch((e: unknown) => e);
+      expect(rejection).to.equal(error);
+      expect(firstStop.calledOnce).to.be.true;
+      expect(failingStop.called).to.be.false;
+      expect(neverStarted.called).to.be.false;
+      expect(neverStartedStop.called).to.be.false;
+    });
+
+    it('does not stop services that are not Stoppable', async function () {
+      manager = new ProcessManager({ name: 'test', stopOnError: true });
+      manager.add(emitting({ start: sinon.stub().resolves() }));
+      manager.add(emitting({ start: () => Promise.reject(new Error('boom')) }));
+      record(manager, 'manager');
+      await expect(manager.start()).to.be.rejectedWith('boom');
+      expect(log).to.deep.equal(['manager:startError']);
+    });
+
+    it('emits the rollback outcome before startError', async function () {
+      manager = new ProcessManager({ name: 'test', stopOnError: true });
+      record(manager, 'manager');
+      manager.add(
+        emitting({
+          start: sinon.stub().resolves(),
+          stop: sinon.stub().resolves(),
+        }),
+      );
+      manager.add(emitting({ start: () => Promise.reject(new Error('boom')) }));
+      await expect(manager.start()).to.be.rejectedWith('boom');
+      expect(log).to.deep.equal(['manager:stopped', 'manager:startError']);
+    });
+
+    it('reports a stop failure without replacing the start error', async function () {
+      const startFailure = new Error('start failed');
+      const stopFailure = new Error('stop failed');
+      const startError = sinon.fake();
+      const stopError = sinon.fake();
+      manager = new ProcessManager({ name: 'test', stopOnError: true });
+      manager.on(SERVICE_START_ERROR, startError);
+      manager.on(SERVICE_STOP_ERROR, stopError);
+      record(manager, 'manager');
+      manager.add(
+        emitting({
+          start: sinon.stub().resolves(),
+          stop: () => Promise.reject(stopFailure),
+        }),
+      );
+      manager.add(emitting({ start: () => Promise.reject(startFailure) }));
+      const rejection = await manager.start().catch((e: unknown) => e);
+      expect(rejection).to.equal(startFailure);
+      expect(startError.calledOnceWithExactly(startFailure)).to.be.true;
+      expect(stopError.calledOnceWithExactly(stopFailure)).to.be.true;
+      expect(log).to.deep.equal(['manager:stopError', 'manager:startError']);
+    });
+
+    it('applies maxStopWaitMs to the rollback', async function () {
+      const stopError = sinon.fake();
+      manager = new ProcessManager({
+        name: 'test',
+        stopOnError: true,
+        maxStopWaitMs: 20,
+      });
+      manager.on(SERVICE_STOP_ERROR, stopError);
+      manager.add(
+        emitting({ start: sinon.stub().resolves(), stop: () => delay(200) }),
+      );
+      manager.add(emitting({ start: () => Promise.reject(new Error('boom')) }));
+      await expect(manager.start()).to.be.rejectedWith('boom');
+      expect(stopError.firstCall.args[0].message).to.contain('stop timed out');
+    });
+
+    it('stops only the services that started with the parallel strategy', async function () {
+      const error = new Error('boom');
+      const fastStop = sinon.stub().resolves();
+      const slowStop = sinon.stub().resolves();
+      const failingStop = sinon.stub().resolves();
+      manager = new ProcessManager({
+        name: 'test',
+        stopOnError: true,
+        executionStrategy: new ParallelExecutionStrategy(),
+      });
+      manager.add(emitting({ start: () => delay(5), stop: fastStop }));
+      manager.add(emitting({ start: () => delay(40), stop: slowStop }));
+      manager.add(
+        emitting({
+          start: async () => {
+            await delay(10);
+            throw error;
+          },
+          stop: failingStop,
+        }),
+      );
+      const rejection = await manager.start().catch((e: unknown) => e);
+      expect(rejection).to.be.instanceOf(ExecutionError);
+      expect((rejection as ExecutionError).errors).to.deep.equal([error]);
+      expect(fastStop.calledOnce).to.be.true;
+      expect(slowStop.calledOnce).to.be.true;
+      expect(failingStop.called).to.be.false;
+    });
+
+    it('allows start to be retried after a rolled-back failure', async function () {
+      const start = sinon.stub();
+      start.onFirstCall().rejects(new Error('boom'));
+      start.onSecondCall().resolves();
+      const firstStart = sinon.stub().resolves();
+      manager = new ProcessManager({ name: 'test', stopOnError: true });
+      manager.add(
+        emitting({ start: firstStart, stop: sinon.stub().resolves() }),
+      );
+      manager.add(emitting({ start }));
+      await expect(manager.start()).to.be.rejectedWith('boom');
+      await expect(manager.start()).to.eventually.be.undefined;
+      expect(firstStart.calledTwice).to.be.true;
+    });
+
+    it('rolls back at every level of nested managers', async function () {
+      const error = new Error('boom');
+      const siblingStop = sinon.stub().resolves();
+      const childStop = sinon.stub().resolves();
+      const parent = new ProcessManager({ name: 'parent', stopOnError: true });
+      parent.add(
+        emitting({ start: sinon.stub().resolves(), stop: siblingStop }),
+      );
+      manager = new ProcessManager({
+        name: 'child',
+        stopOnError: true,
+        processManager: parent,
+      });
+      record(parent, 'parent');
+      record(manager, 'child');
+      manager.add(
+        emitting({ start: sinon.stub().resolves(), stop: childStop }),
+      );
+      manager.add(emitting({ start: () => Promise.reject(error) }));
+      const rejection = await parent.start().catch((e: unknown) => e);
+      expect(rejection).to.equal(error);
+      expect(childStop.calledOnce).to.be.true;
+      expect(siblingStop.calledOnce).to.be.true;
+      expect(log).to.deep.equal([
+        'child:stopped',
+        'child:startError',
+        'parent:stopped',
+        'parent:startError',
+      ]);
+      await parent.stop();
+    });
+  });
+
   describe('parent', function () {
     let parent: ProcessManager;
 
