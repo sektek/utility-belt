@@ -1,8 +1,18 @@
 import { expect, use } from 'chai';
+import { EventEmitter } from 'eventemitter3';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
-import { ParallelExecutionStrategy } from './execution-strategies/index.js';
+import {
+  ExecutionError,
+  ParallelExecutionStrategy,
+} from './execution-strategies/index.js';
+import {
+  SERVICE_STARTED,
+  SERVICE_START_ERROR,
+  SERVICE_STOPPED,
+  SERVICE_STOP_ERROR,
+} from './types/index.js';
 import { ProcessManager } from './process-manager.js';
 
 use(chaiAsPromised);
@@ -266,6 +276,218 @@ describe('ProcessManager', function () {
       process.emit('SIGINT');
       await delay(10);
       expect(stop.calledOnce).to.be.true;
+    });
+  });
+
+  describe('lifecycle events', function () {
+    let log: string[];
+
+    const record = (target: ProcessManager, label: string) => {
+      target.on(SERVICE_STARTED, () => log.push(`${label}:started`));
+      target.on(SERVICE_STOPPED, () => log.push(`${label}:stopped`));
+      target.on(SERVICE_START_ERROR, () => log.push(`${label}:startError`));
+      target.on(SERVICE_STOP_ERROR, () => log.push(`${label}:stopError`));
+    };
+
+    beforeEach(function () {
+      log = [];
+    });
+
+    it('emits service:started once, after every service has started', async function () {
+      manager = new ProcessManager({ name: 'test' });
+      record(manager, 'manager');
+      manager.add({
+        start: async () => {
+          await delay(10);
+          log.push('first:done');
+        },
+      });
+      manager.add({
+        start: async () => {
+          log.push('second:done');
+        },
+      });
+      await manager.start();
+      expect(log).to.deep.equal([
+        'first:done',
+        'second:done',
+        'manager:started',
+      ]);
+    });
+
+    it('emits service:stopped once, after every service has stopped', async function () {
+      manager = new ProcessManager({ name: 'test' });
+      record(manager, 'manager');
+      manager.add({
+        stop: async () => {
+          await delay(10);
+          log.push('first:done');
+        },
+      });
+      manager.add({
+        stop: async () => {
+          log.push('second:done');
+        },
+      });
+      await manager.stop();
+      expect(log).to.deep.equal([
+        'first:done',
+        'second:done',
+        'manager:stopped',
+      ]);
+    });
+
+    it('emits service:startError with the rejection, then rethrows it', async function () {
+      const error = new Error('boom');
+      const listener = sinon.fake();
+      manager = new ProcessManager({ name: 'test' });
+      record(manager, 'manager');
+      manager.on(SERVICE_START_ERROR, listener);
+      manager.add({ start: () => Promise.reject(error) });
+      const rejection = await manager.start().catch((e: unknown) => e);
+      expect(rejection).to.equal(error);
+      expect(listener.calledOnceWithExactly(error)).to.be.true;
+      expect(log).to.deep.equal(['manager:startError']);
+    });
+
+    it('wraps a rejection that is not an Error in the event, and rethrows the original', async function () {
+      const startListener = sinon.fake();
+      const stopListener = sinon.fake();
+      manager = new ProcessManager({ name: 'test' });
+      manager.on(SERVICE_START_ERROR, startListener);
+      manager.on(SERVICE_STOP_ERROR, stopListener);
+      manager.add({
+        start: () => Promise.reject('start failed'),
+        stop: () => Promise.reject(undefined),
+      });
+
+      expect(await manager.start().catch((e: unknown) => e)).to.equal(
+        'start failed',
+      );
+      expect(await manager.stop().catch((e: unknown) => e)).to.be.undefined;
+
+      const [startEvent] = startListener.firstCall.args;
+      expect(startEvent).to.be.instanceOf(Error);
+      expect(startEvent.message).to.equal('start failed');
+      expect(startEvent.cause).to.equal('start failed');
+      const [stopEvent] = stopListener.firstCall.args;
+      expect(stopEvent).to.be.instanceOf(Error);
+      expect(stopEvent.cause).to.be.undefined;
+    });
+
+    it('emits service:stopError with the rejection, then rethrows it', async function () {
+      const error = new Error('boom');
+      const listener = sinon.fake();
+      manager = new ProcessManager({ name: 'test' });
+      record(manager, 'manager');
+      manager.on(SERVICE_STOP_ERROR, listener);
+      manager.add({ stop: () => Promise.reject(error) });
+      const rejection = await manager.stop().catch((e: unknown) => e);
+      expect(rejection).to.equal(error);
+      expect(listener.calledOnceWithExactly(error)).to.be.true;
+      expect(log).to.deep.equal(['manager:stopError']);
+    });
+
+    it('emits service:startError with the timeout error when a service exceeds maxStartWaitMs', async function () {
+      const listener = sinon.fake();
+      manager = new ProcessManager({ name: 'test', maxStartWaitMs: 20 });
+      manager.on(SERVICE_START_ERROR, listener);
+      manager.add({ start: () => delay(200) });
+      const rejection = await manager.start().catch((e: unknown) => e);
+      expect(rejection).to.be.instanceOf(Error);
+      expect(listener.firstCall.args[0]).to.equal(rejection);
+      expect((rejection as Error).message).to.contain('start timed out');
+    });
+
+    it('emits service:stopError with the timeout error when a service exceeds maxStopWaitMs', async function () {
+      const listener = sinon.fake();
+      manager = new ProcessManager({ name: 'test', maxStopWaitMs: 20 });
+      manager.on(SERVICE_STOP_ERROR, listener);
+      manager.add({ stop: () => delay(200) });
+      const rejection = await manager.stop().catch((e: unknown) => e);
+      expect(rejection).to.be.instanceOf(Error);
+      expect(listener.firstCall.args[0]).to.equal(rejection);
+      expect((rejection as Error).message).to.contain('stop timed out');
+    });
+
+    it('emits the original error of the first failing service with the serial strategy', async function () {
+      const first = new Error('first');
+      const listener = sinon.fake();
+      manager = new ProcessManager({ name: 'test' });
+      manager.on(SERVICE_START_ERROR, listener);
+      manager.add({ start: () => Promise.reject(first) });
+      manager.add({ start: () => Promise.reject(new Error('second')) });
+      await expect(manager.start()).to.be.rejected;
+      expect(listener.calledOnce).to.be.true;
+      expect(listener.firstCall.args[0]).to.equal(first);
+    });
+
+    it('emits an ExecutionError containing every failure with the parallel strategy', async function () {
+      const first = new Error('first');
+      const second = new Error('second');
+      const listener = sinon.fake();
+      manager = new ProcessManager({
+        name: 'test',
+        executionStrategy: new ParallelExecutionStrategy(),
+      });
+      manager.on(SERVICE_START_ERROR, listener);
+      manager.add({ start: () => Promise.reject(first) });
+      manager.add({ start: () => Promise.reject(second) });
+      const rejection = await manager.start().catch((e: unknown) => e);
+      expect(rejection).to.be.instanceOf(ExecutionError);
+      expect(listener.calledOnce).to.be.true;
+      expect(listener.firstCall.args[0]).to.equal(rejection);
+      expect((rejection as ExecutionError).errors).to.have.members([
+        first,
+        second,
+      ]);
+    });
+
+    it('emits each nested manager own events once, child before parent', async function () {
+      const parent = new ProcessManager({ name: 'parent' });
+      manager = new ProcessManager({ name: 'child', processManager: parent });
+      record(parent, 'parent');
+      record(manager, 'child');
+      manager.add({
+        start: async () => undefined,
+        stop: async () => undefined,
+      });
+      await parent.start();
+      await parent.stop();
+      expect(log).to.deep.equal([
+        'child:started',
+        'parent:started',
+        'child:stopped',
+        'parent:stopped',
+      ]);
+    });
+
+    it('reports a failure at every level of nested managers', async function () {
+      const error = new Error('boom');
+      const parent = new ProcessManager({ name: 'parent' });
+      manager = new ProcessManager({ name: 'child', processManager: parent });
+      record(parent, 'parent');
+      record(manager, 'child');
+      manager.add({ start: () => Promise.reject(error) });
+      const rejection = await parent.start().catch((e: unknown) => e);
+      expect(rejection).to.equal(error);
+      expect(log).to.deep.equal(['child:startError', 'parent:startError']);
+    });
+
+    it('does not forward the events of its services', async function () {
+      const service = new EventEmitter();
+      const listener = sinon.fake();
+      manager = new ProcessManager({ name: 'test' });
+      manager.on(SERVICE_STARTED, listener);
+      manager.add(
+        Object.assign(service, {
+          start: async () => {
+            service.emit(SERVICE_STARTED);
+          },
+        }),
+      );
+      await manager.start();
+      expect(listener.calledOnce).to.be.true;
     });
   });
 
