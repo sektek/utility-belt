@@ -520,6 +520,123 @@ describe('ProcessManager', function () {
     });
   });
 
+  describe('idempotency', function () {
+    it('shares one run between concurrent stop calls', async function () {
+      const stop = sinon.stub().callsFake(() => delay(10));
+      const stopped = sinon.fake();
+      manager = new ProcessManager({ name: 'test' });
+      manager.on(SERVICE_STOPPED, stopped);
+      manager.add(emitting({ stop }));
+      await Promise.all([manager.stop(), manager.stop()]);
+      expect(stop.calledOnce).to.be.true;
+      expect(stopped.calledOnce).to.be.true;
+    });
+
+    it('shares one run between concurrent start calls', async function () {
+      const start = sinon.stub().callsFake(() => delay(10));
+      const started = sinon.fake();
+      manager = new ProcessManager({ name: 'test' });
+      manager.on(SERVICE_STARTED, started);
+      manager.add(emitting({ start }));
+      await Promise.all([manager.start(), manager.start()]);
+      expect(start.calledOnce).to.be.true;
+      expect(started.calledOnce).to.be.true;
+    });
+
+    it('gives concurrent callers the same rejection', async function () {
+      const error = new Error('boom');
+      const stopError = sinon.fake();
+      manager = new ProcessManager({ name: 'test' });
+      manager.on(SERVICE_STOP_ERROR, stopError);
+      manager.add(emitting({ stop: () => Promise.reject(error) }));
+      const results = await Promise.all([
+        manager.stop().catch((e: unknown) => e),
+        manager.stop().catch((e: unknown) => e),
+      ]);
+      expect(results).to.deep.equal([error, error]);
+      expect(stopError.calledOnce).to.be.true;
+    });
+
+    it('runs a signal and an explicit stop once', async function () {
+      const stop = sinon.stub().callsFake(() => delay(10));
+      manager = new ProcessManager({ name: 'test' });
+      manager.add(emitting({ stop }));
+      process.emit('SIGTERM');
+      await manager.stop();
+      expect(stop.calledOnce).to.be.true;
+    });
+
+    it('does not stop the services again after a completed stop', async function () {
+      const stop = sinon.stub().resolves();
+      const stopped = sinon.fake();
+      manager = new ProcessManager({ name: 'test' });
+      manager.on(SERVICE_STOPPED, stopped);
+      manager.add(emitting({ stop }));
+      await manager.stop();
+      await manager.stop();
+      expect(stop.calledOnce).to.be.true;
+      expect(stopped.calledOnce).to.be.true;
+    });
+
+    it('does not start the services again after a completed start', async function () {
+      const start = sinon.stub().resolves();
+      const started = sinon.fake();
+      manager = new ProcessManager({ name: 'test' });
+      manager.on(SERVICE_STARTED, started);
+      manager.add(emitting({ start }));
+      await manager.start();
+      await manager.start();
+      expect(start.calledOnce).to.be.true;
+      expect(started.calledOnce).to.be.true;
+    });
+
+    it('stops a service added after a completed stop', async function () {
+      const first = sinon.stub().resolves();
+      const second = sinon.stub().resolves();
+      manager = new ProcessManager({ name: 'test' });
+      manager.add(emitting({ stop: first }));
+      await manager.stop();
+      manager.add(emitting({ stop: second }));
+      await manager.stop();
+      expect(second.calledOnce).to.be.true;
+    });
+
+    it('runs a stop again after a failed stop', async function () {
+      const stop = sinon.stub();
+      stop.onFirstCall().rejects(new Error('boom'));
+      stop.onSecondCall().resolves();
+      manager = new ProcessManager({ name: 'test' });
+      manager.add(emitting({ stop }));
+      await expect(manager.stop()).to.be.rejectedWith('boom');
+      await expect(manager.stop()).to.eventually.be.undefined;
+      expect(stop.calledTwice).to.be.true;
+    });
+
+    it('runs a start again after a failed start', async function () {
+      const start = sinon.stub();
+      start.onFirstCall().rejects(new Error('boom'));
+      start.onSecondCall().resolves();
+      manager = new ProcessManager({ name: 'test' });
+      manager.add(emitting({ start }));
+      await expect(manager.start()).to.be.rejectedWith('boom');
+      await expect(manager.start()).to.eventually.be.undefined;
+      expect(start.calledTwice).to.be.true;
+    });
+
+    it('starts the services again after a completed stop', async function () {
+      const start = sinon.stub().resolves();
+      const stop = sinon.stub().resolves();
+      manager = new ProcessManager({ name: 'test' });
+      manager.add(emitting({ start, stop }));
+      await manager.start();
+      await manager.stop();
+      await manager.start();
+      await manager.stop();
+      expect(start.calledTwice).to.be.true;
+      expect(stop.calledTwice).to.be.true;
+    });
+  });
+
   describe('parent', function () {
     let parent: ProcessManager;
 

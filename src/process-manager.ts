@@ -101,6 +101,10 @@ export class ProcessManager
   #stoppables: Set<Stoppable> = new Set();
   #signalListener: (() => void) | undefined;
   #managesOwnSignals: boolean;
+  #started = false;
+  #stopped = false;
+  #starting: Promise<void> | undefined;
+  #stopping: Promise<void> | undefined;
 
   constructor(opts: ProcessManagerOptions) {
     super(opts);
@@ -123,7 +127,8 @@ export class ProcessManager
    * Registers a service with this manager.
    * If the service implements `Startable` it will be started by `start()`.
    * If it implements `Stoppable` it will be stopped by `stop()`.
-   * A service may implement both.
+   * A service may implement both. Adding a `Stoppable` after the manager has
+   * stopped makes the next `stop()` run again so the new service is stopped too.
    *
    * @param service - The service to register.
    */
@@ -139,6 +144,7 @@ export class ProcessManager
     if (isStoppable(service)) {
       logger.info('stoppable added', { service: serviceName });
       this.#stoppables.add(service);
+      this.#stopped = false;
       if (this.#managesOwnSignals) {
         this.#registerSignalListener();
       }
@@ -185,10 +191,41 @@ export class ProcessManager
    * Starts all registered `Startable` services using the configured execution strategy.
    * If `maxStartWaitMs` is set, each individual service must complete within that limit.
    *
+   * The call is idempotent. Concurrent calls share the single in-flight run, so
+   * every caller sees the same outcome (resolution or the same rejection). A call
+   * after a successful start resolves immediately without starting the services
+   * again. A failed start does not mark the manager as started, so it may be
+   * retried, and a `start()` after a completed `stop()` starts the services again.
+   * Lifecycle events are emitted once per run, not once per call. Calling `start()`
+   * while a `stop()` is in flight is not coordinated: the two runs proceed independently.
+   *
+   * @returns A promise that resolves once the services are started.
    * @throws {Error} If any service's `start()` rejects, or if a service exceeds `maxStartWaitMs`.
    * The rejection is emitted as `service:startError` and rethrown unchanged.
    */
-  async start(): Promise<void> {
+  start(): Promise<void> {
+    if (this.#starting) {
+      return this.#starting;
+    }
+
+    if (this.#started) {
+      return Promise.resolve();
+    }
+
+    this.#starting = this.#startOnce();
+
+    return this.#starting;
+  }
+
+  async #startOnce(): Promise<void> {
+    try {
+      await this.#runStart();
+    } finally {
+      this.#starting = undefined;
+    }
+  }
+
+  async #runStart(): Promise<void> {
     const logger = this.logger();
     logger.info('starting services', { count: this.#startables.size });
     try {
@@ -218,6 +255,8 @@ export class ProcessManager
       throw error;
     }
 
+    this.#started = true;
+    this.#stopped = false;
     this.emit(SERVICE_STARTED);
   }
 
@@ -226,10 +265,42 @@ export class ProcessManager
    * If `maxStopWaitMs` is set, each individual service must complete within that limit.
    * If this manager owns SIGTERM/SIGINT listeners, they are removed.
    *
+   * The call is idempotent. Concurrent calls (for example a signal and an explicit
+   * `stop()`) share the single in-flight run, so every caller sees the same outcome
+   * (resolution or the same rejection). A call after a successful stop resolves
+   * immediately without stopping the services again. A manager that was never
+   * started can still be stopped. A failed stop does not mark the manager as
+   * stopped, so it may be retried. Lifecycle events are emitted once per run, not
+   * once per call. Calling `stop()` while a `start()` is in flight is not
+   * coordinated: the two runs proceed independently.
+   *
+   * @returns A promise that resolves once the services are stopped.
    * @throws {Error} If any service's `stop()` rejects, or if a service exceeds `maxStopWaitMs`.
    * The rejection is emitted as `service:stopError` and rethrown unchanged.
    */
-  async stop(): Promise<void> {
+  stop(): Promise<void> {
+    if (this.#stopping) {
+      return this.#stopping;
+    }
+
+    if (this.#stopped) {
+      return Promise.resolve();
+    }
+
+    this.#stopping = this.#stopOnce();
+
+    return this.#stopping;
+  }
+
+  async #stopOnce(): Promise<void> {
+    try {
+      await this.#runStop();
+    } finally {
+      this.#stopping = undefined;
+    }
+  }
+
+  async #runStop(): Promise<void> {
     const logger = this.logger();
     logger.info('stopping services', { count: this.#stoppables.size });
     this.#unregisterSignalListener();
@@ -260,6 +331,8 @@ export class ProcessManager
       throw error;
     }
 
+    this.#stopped = true;
+    this.#started = false;
     this.emit(SERVICE_STOPPED);
   }
 
