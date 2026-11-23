@@ -1,7 +1,11 @@
 import { CommandFn } from './command.js';
 import { ErrorHandlerFn } from './error-handler.js';
+import { EventEmittingService } from './event-emitting-service.js';
 
-export interface Stoppable {
+/**
+ * A component that can be stopped and that emits {@link StoppableEvents}.
+ */
+export interface Stoppable extends EventEmittingService<StoppableEvents> {
   stop: CommandFn;
 }
 

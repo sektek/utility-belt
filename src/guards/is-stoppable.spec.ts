@@ -3,8 +3,21 @@ import { expect } from 'chai';
 import { isStoppable } from './is-stoppable.js';
 
 describe('isStoppable', function () {
-  it('should return true for an object with a stop function', function () {
-    expect(isStoppable({ stop: () => {} })).to.be.true;
+  it('should return true for an object with stop, on and emit functions', function () {
+    expect(isStoppable({ stop: () => {}, on: () => {}, emit: () => {} })).to.be
+      .true;
+  });
+
+  it('should return false for an object with only a stop function', function () {
+    expect(isStoppable({ stop: () => {} })).to.be.false;
+  });
+
+  it('should return false for an object without an on function', function () {
+    expect(isStoppable({ stop: () => {}, emit: () => {} })).to.be.false;
+  });
+
+  it('should return false for an object without an emit function', function () {
+    expect(isStoppable({ stop: () => {}, on: () => {} })).to.be.false;
   });
 
   it('should return false for an object without a stop function', function () {
@@ -12,7 +25,8 @@ describe('isStoppable', function () {
   });
 
   it('should return false for an object with a non-function stop property', function () {
-    expect(isStoppable({ stop: 'stop' })).to.be.false;
+    expect(isStoppable({ stop: 'stop', on: () => {}, emit: () => {} })).to.be
+      .false;
   });
 
   it('should return false for a string', function () {

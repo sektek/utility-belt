@@ -1,10 +1,4 @@
-import {
-  EventEmittingService,
-  SERVICE_STARTED,
-  SERVICE_STOPPED,
-  Service,
-  ServiceEvents,
-} from './types/index.js';
+import { SERVICE_STARTED, SERVICE_STOPPED, Service } from './types/index.js';
 
 import { AbstractComponent, ComponentOptions } from './abstract-component.js';
 import { ProcessManager } from './process-manager.js';
@@ -51,7 +45,7 @@ export type ServiceOptions = ComponentOptions & {
  */
 export abstract class AbstractService
   extends AbstractComponent
-  implements Service, EventEmittingService<ServiceEvents>
+  implements Service
 {
   constructor(opts: ServiceOptions = {}) {
     super(opts);

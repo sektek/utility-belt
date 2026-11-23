@@ -1,7 +1,11 @@
 import { CommandFn } from './command.js';
 import { ErrorHandlerFn } from './error-handler.js';
+import { EventEmittingService } from './event-emitting-service.js';
 
-export interface Startable {
+/**
+ * A component that can be started and that emits {@link StartableEvents}.
+ */
+export interface Startable extends EventEmittingService<StartableEvents> {
   start: CommandFn;
 }
 

@@ -17,6 +17,9 @@ import { ProcessManager } from './process-manager.js';
 
 use(chaiAsPromised);
 
+const emitting = <T extends object>(service: T) =>
+  Object.assign(new EventEmitter(), service);
+
 const delay = (ms: number) =>
   new Promise<void>(resolve => setTimeout(resolve, ms));
 
@@ -40,7 +43,7 @@ describe('ProcessManager', function () {
     it('accepts a Startable', async function () {
       const start = sinon.stub().resolves();
       manager = new ProcessManager({ name: 'test' });
-      manager.add({ start });
+      manager.add(emitting({ start }));
       await manager.start();
       expect(start.calledOnce).to.be.true;
     });
@@ -48,7 +51,7 @@ describe('ProcessManager', function () {
     it('accepts a Stoppable', async function () {
       const stop = sinon.stub().resolves();
       manager = new ProcessManager({ name: 'test' });
-      manager.add({ stop });
+      manager.add(emitting({ stop }));
       await manager.stop();
       expect(stop.calledOnce).to.be.true;
     });
@@ -57,7 +60,7 @@ describe('ProcessManager', function () {
       const start = sinon.stub().resolves();
       const stop = sinon.stub().resolves();
       manager = new ProcessManager({ name: 'test' });
-      manager.add({ start, stop });
+      manager.add(emitting({ start, stop }));
       await manager.start();
       await manager.stop();
       expect(start.calledOnce).to.be.true;
@@ -68,7 +71,7 @@ describe('ProcessManager', function () {
   describe('remove', function () {
     it('stops calling start on a removed startable', async function () {
       const start = sinon.stub().resolves();
-      const service = { start };
+      const service = emitting({ start });
       manager = new ProcessManager({ name: 'test' });
       manager.add(service);
       manager.remove(service);
@@ -78,7 +81,7 @@ describe('ProcessManager', function () {
 
     it('stops calling stop on a removed stoppable', async function () {
       const stop = sinon.stub().resolves();
-      const service = { stop };
+      const service = emitting({ stop });
       manager = new ProcessManager({ name: 'test' });
       manager.add(service);
       manager.remove(service);
@@ -87,7 +90,7 @@ describe('ProcessManager', function () {
     });
 
     it('removes SIGTERM and SIGINT listeners once the last stoppable is removed', function () {
-      const service = { stop: sinon.stub().resolves() };
+      const service = emitting({ stop: sinon.stub().resolves() });
       manager = new ProcessManager({ name: 'test' });
       const sigtermBefore = process.listenerCount('SIGTERM');
       const sigintBefore = process.listenerCount('SIGINT');
@@ -102,8 +105,8 @@ describe('ProcessManager', function () {
     });
 
     it('keeps SIGTERM and SIGINT listeners registered while other stoppables remain', function () {
-      const first = { stop: sinon.stub().resolves() };
-      const second = { stop: sinon.stub().resolves() };
+      const first = emitting({ stop: sinon.stub().resolves() });
+      const second = emitting({ stop: sinon.stub().resolves() });
       manager = new ProcessManager({ name: 'test' });
       const sigtermBefore = process.listenerCount('SIGTERM');
 
@@ -115,7 +118,7 @@ describe('ProcessManager', function () {
 
     it('no longer calls stop on a removed service after a signal is received', async function () {
       const stop = sinon.stub().resolves();
-      const service = { stop };
+      const service = emitting({ stop });
       manager = new ProcessManager({ name: 'test' });
       manager.add(service);
       manager.remove(service);
@@ -129,7 +132,7 @@ describe('ProcessManager', function () {
     it('calls start on all registered startables', async function () {
       const starts = [sinon.stub().resolves(), sinon.stub().resolves()];
       manager = new ProcessManager({ name: 'test' });
-      starts.forEach(start => manager!.add({ start }));
+      starts.forEach(start => manager!.add(emitting({ start })));
       await manager.start();
       starts.forEach(start => expect(start.calledOnce).to.be.true);
     });
@@ -140,31 +143,35 @@ describe('ProcessManager', function () {
         name: 'test',
         executionStrategy: new ParallelExecutionStrategy(),
       });
-      manager.add({
-        start: async () => {
-          await delay(30);
-          order.push(1);
-        },
-      });
-      manager.add({
-        start: async () => {
-          await delay(10);
-          order.push(2);
-        },
-      });
+      manager.add(
+        emitting({
+          start: async () => {
+            await delay(30);
+            order.push(1);
+          },
+        }),
+      );
+      manager.add(
+        emitting({
+          start: async () => {
+            await delay(10);
+            order.push(2);
+          },
+        }),
+      );
       await manager.start();
       expect(order).to.deep.equal([2, 1]);
     });
 
     it('rejects if a service start rejects', async function () {
       manager = new ProcessManager({ name: 'test' });
-      manager.add({ start: () => Promise.reject(new Error('boom')) });
+      manager.add(emitting({ start: () => Promise.reject(new Error('boom')) }));
       await expect(manager.start()).to.be.rejectedWith('boom');
     });
 
     it('rejects with a timeout error when maxStartWaitMs is exceeded', async function () {
       manager = new ProcessManager({ name: 'test', maxStartWaitMs: 40 });
-      manager.add({ start: () => delay(200) });
+      manager.add(emitting({ start: () => delay(200) }));
       await expect(manager.start()).to.be.rejectedWith(
         "ProcessManager 'test': service 'undefined' - start timed out",
       );
@@ -172,10 +179,12 @@ describe('ProcessManager', function () {
 
     it('includes the service name in the timeout error when the service is Named', async function () {
       manager = new ProcessManager({ name: 'test', maxStartWaitMs: 20 });
-      manager.add({
-        name: 'slow-service',
-        start: () => delay(200),
-      } as Parameters<ProcessManager['add']>[0]);
+      manager.add(
+        emitting({
+          name: 'slow-service',
+          start: () => delay(200),
+        }),
+      );
       await expect(manager.start()).to.be.rejectedWith(
         "ProcessManager 'test': service 'slow-service' - start timed out",
       );
@@ -184,25 +193,29 @@ describe('ProcessManager', function () {
     it('applies the timeout per service, not globally', async function () {
       const order: number[] = [];
       manager = new ProcessManager({ name: 'test', maxStartWaitMs: 50 });
-      manager.add({
-        start: async () => {
-          await delay(10);
-          order.push(1);
-        },
-      });
-      manager.add({
-        start: async () => {
-          await delay(10);
-          order.push(2);
-        },
-      });
+      manager.add(
+        emitting({
+          start: async () => {
+            await delay(10);
+            order.push(1);
+          },
+        }),
+      );
+      manager.add(
+        emitting({
+          start: async () => {
+            await delay(10);
+            order.push(2);
+          },
+        }),
+      );
       await manager.start();
       expect(order).to.deep.equal([1, 2]);
     });
 
     it('does not time out when maxStartWaitMs is not set', async function () {
       manager = new ProcessManager({ name: 'test' });
-      manager.add({ start: () => delay(50) });
+      manager.add(emitting({ start: () => delay(50) }));
       await expect(manager.start()).to.eventually.be.undefined;
     });
   });
@@ -211,20 +224,20 @@ describe('ProcessManager', function () {
     it('calls stop on all registered stoppables', async function () {
       const stops = [sinon.stub().resolves(), sinon.stub().resolves()];
       manager = new ProcessManager({ name: 'test' });
-      stops.forEach(stop => manager!.add({ stop }));
+      stops.forEach(stop => manager!.add(emitting({ stop })));
       await manager.stop();
       stops.forEach(stop => expect(stop.calledOnce).to.be.true);
     });
 
     it('rejects if a service stop rejects', async function () {
       manager = new ProcessManager({ name: 'test' });
-      manager.add({ stop: () => Promise.reject(new Error('boom')) });
+      manager.add(emitting({ stop: () => Promise.reject(new Error('boom')) }));
       await expect(manager.stop()).to.be.rejectedWith('boom');
     });
 
     it('rejects with a timeout error when maxStopWaitMs is exceeded', async function () {
       manager = new ProcessManager({ name: 'test', maxStopWaitMs: 20 });
-      manager.add({ stop: () => delay(200) });
+      manager.add(emitting({ stop: () => delay(200) }));
       await expect(manager.stop()).to.be.rejectedWith(
         "ProcessManager 'test': service 'undefined' - stop timed out",
       );
@@ -232,10 +245,12 @@ describe('ProcessManager', function () {
 
     it('includes the service name in the timeout error when the service is Named', async function () {
       manager = new ProcessManager({ name: 'test', maxStopWaitMs: 20 });
-      manager.add({
-        name: 'slow-service',
-        stop: () => delay(200),
-      } as Parameters<ProcessManager['add']>[0]);
+      manager.add(
+        emitting({
+          name: 'slow-service',
+          stop: () => delay(200),
+        }),
+      );
       await expect(manager.stop()).to.be.rejectedWith(
         "ProcessManager 'test': service 'slow-service' - stop timed out",
       );
@@ -243,7 +258,7 @@ describe('ProcessManager', function () {
 
     it('does not time out when maxStopWaitMs is not set', async function () {
       manager = new ProcessManager({ name: 'test' });
-      manager.add({ stop: () => delay(50) });
+      manager.add(emitting({ stop: () => delay(50) }));
       await expect(manager.stop()).to.eventually.be.undefined;
     });
   });
@@ -252,7 +267,7 @@ describe('ProcessManager', function () {
     it('calls stop when SIGTERM is received', async function () {
       const stop = sinon.stub().resolves();
       manager = new ProcessManager({ name: 'test' });
-      manager.add({ stop });
+      manager.add(emitting({ stop }));
       process.emit('SIGTERM');
       await delay(10);
       expect(stop.calledOnce).to.be.true;
@@ -261,7 +276,7 @@ describe('ProcessManager', function () {
     it('calls stop when SIGINT is received', async function () {
       const stop = sinon.stub().resolves();
       manager = new ProcessManager({ name: 'test' });
-      manager.add({ stop });
+      manager.add(emitting({ stop }));
       process.emit('SIGINT');
       await delay(10);
       expect(stop.calledOnce).to.be.true;
@@ -270,7 +285,7 @@ describe('ProcessManager', function () {
     it('removes SIGTERM and SIGINT listeners after stop is called', async function () {
       const stop = sinon.stub().resolves();
       manager = new ProcessManager({ name: 'test' });
-      manager.add({ stop });
+      manager.add(emitting({ stop }));
       await manager.stop();
       process.emit('SIGTERM');
       process.emit('SIGINT');
@@ -296,17 +311,21 @@ describe('ProcessManager', function () {
     it('emits service:started once, after every service has started', async function () {
       manager = new ProcessManager({ name: 'test' });
       record(manager, 'manager');
-      manager.add({
-        start: async () => {
-          await delay(10);
-          log.push('first:done');
-        },
-      });
-      manager.add({
-        start: async () => {
-          log.push('second:done');
-        },
-      });
+      manager.add(
+        emitting({
+          start: async () => {
+            await delay(10);
+            log.push('first:done');
+          },
+        }),
+      );
+      manager.add(
+        emitting({
+          start: async () => {
+            log.push('second:done');
+          },
+        }),
+      );
       await manager.start();
       expect(log).to.deep.equal([
         'first:done',
@@ -318,17 +337,21 @@ describe('ProcessManager', function () {
     it('emits service:stopped once, after every service has stopped', async function () {
       manager = new ProcessManager({ name: 'test' });
       record(manager, 'manager');
-      manager.add({
-        stop: async () => {
-          await delay(10);
-          log.push('first:done');
-        },
-      });
-      manager.add({
-        stop: async () => {
-          log.push('second:done');
-        },
-      });
+      manager.add(
+        emitting({
+          stop: async () => {
+            await delay(10);
+            log.push('first:done');
+          },
+        }),
+      );
+      manager.add(
+        emitting({
+          stop: async () => {
+            log.push('second:done');
+          },
+        }),
+      );
       await manager.stop();
       expect(log).to.deep.equal([
         'first:done',
@@ -343,7 +366,7 @@ describe('ProcessManager', function () {
       manager = new ProcessManager({ name: 'test' });
       record(manager, 'manager');
       manager.on(SERVICE_START_ERROR, listener);
-      manager.add({ start: () => Promise.reject(error) });
+      manager.add(emitting({ start: () => Promise.reject(error) }));
       const rejection = await manager.start().catch((e: unknown) => e);
       expect(rejection).to.equal(error);
       expect(listener.calledOnceWithExactly(error)).to.be.true;
@@ -356,10 +379,12 @@ describe('ProcessManager', function () {
       manager = new ProcessManager({ name: 'test' });
       manager.on(SERVICE_START_ERROR, startListener);
       manager.on(SERVICE_STOP_ERROR, stopListener);
-      manager.add({
-        start: () => Promise.reject('start failed'),
-        stop: () => Promise.reject(undefined),
-      });
+      manager.add(
+        emitting({
+          start: () => Promise.reject('start failed'),
+          stop: () => Promise.reject(undefined),
+        }),
+      );
 
       expect(await manager.start().catch((e: unknown) => e)).to.equal(
         'start failed',
@@ -381,7 +406,7 @@ describe('ProcessManager', function () {
       manager = new ProcessManager({ name: 'test' });
       record(manager, 'manager');
       manager.on(SERVICE_STOP_ERROR, listener);
-      manager.add({ stop: () => Promise.reject(error) });
+      manager.add(emitting({ stop: () => Promise.reject(error) }));
       const rejection = await manager.stop().catch((e: unknown) => e);
       expect(rejection).to.equal(error);
       expect(listener.calledOnceWithExactly(error)).to.be.true;
@@ -392,7 +417,7 @@ describe('ProcessManager', function () {
       const listener = sinon.fake();
       manager = new ProcessManager({ name: 'test', maxStartWaitMs: 20 });
       manager.on(SERVICE_START_ERROR, listener);
-      manager.add({ start: () => delay(200) });
+      manager.add(emitting({ start: () => delay(200) }));
       const rejection = await manager.start().catch((e: unknown) => e);
       expect(rejection).to.be.instanceOf(Error);
       expect(listener.firstCall.args[0]).to.equal(rejection);
@@ -403,7 +428,7 @@ describe('ProcessManager', function () {
       const listener = sinon.fake();
       manager = new ProcessManager({ name: 'test', maxStopWaitMs: 20 });
       manager.on(SERVICE_STOP_ERROR, listener);
-      manager.add({ stop: () => delay(200) });
+      manager.add(emitting({ stop: () => delay(200) }));
       const rejection = await manager.stop().catch((e: unknown) => e);
       expect(rejection).to.be.instanceOf(Error);
       expect(listener.firstCall.args[0]).to.equal(rejection);
@@ -415,8 +440,10 @@ describe('ProcessManager', function () {
       const listener = sinon.fake();
       manager = new ProcessManager({ name: 'test' });
       manager.on(SERVICE_START_ERROR, listener);
-      manager.add({ start: () => Promise.reject(first) });
-      manager.add({ start: () => Promise.reject(new Error('second')) });
+      manager.add(emitting({ start: () => Promise.reject(first) }));
+      manager.add(
+        emitting({ start: () => Promise.reject(new Error('second')) }),
+      );
       await expect(manager.start()).to.be.rejected;
       expect(listener.calledOnce).to.be.true;
       expect(listener.firstCall.args[0]).to.equal(first);
@@ -431,8 +458,8 @@ describe('ProcessManager', function () {
         executionStrategy: new ParallelExecutionStrategy(),
       });
       manager.on(SERVICE_START_ERROR, listener);
-      manager.add({ start: () => Promise.reject(first) });
-      manager.add({ start: () => Promise.reject(second) });
+      manager.add(emitting({ start: () => Promise.reject(first) }));
+      manager.add(emitting({ start: () => Promise.reject(second) }));
       const rejection = await manager.start().catch((e: unknown) => e);
       expect(rejection).to.be.instanceOf(ExecutionError);
       expect(listener.calledOnce).to.be.true;
@@ -448,10 +475,12 @@ describe('ProcessManager', function () {
       manager = new ProcessManager({ name: 'child', processManager: parent });
       record(parent, 'parent');
       record(manager, 'child');
-      manager.add({
-        start: async () => undefined,
-        stop: async () => undefined,
-      });
+      manager.add(
+        emitting({
+          start: async () => undefined,
+          stop: async () => undefined,
+        }),
+      );
       await parent.start();
       await parent.stop();
       expect(log).to.deep.equal([
@@ -468,7 +497,7 @@ describe('ProcessManager', function () {
       manager = new ProcessManager({ name: 'child', processManager: parent });
       record(parent, 'parent');
       record(manager, 'child');
-      manager.add({ start: () => Promise.reject(error) });
+      manager.add(emitting({ start: () => Promise.reject(error) }));
       const rejection = await parent.start().catch((e: unknown) => e);
       expect(rejection).to.equal(error);
       expect(log).to.deep.equal(['child:startError', 'parent:startError']);
@@ -506,7 +535,7 @@ describe('ProcessManager', function () {
       const start = sinon.stub().resolves();
       const stop = sinon.stub().resolves();
       manager = new ProcessManager({ name: 'child', processManager: parent });
-      manager.add({ start, stop });
+      manager.add(emitting({ start, stop }));
       await parent.start();
       await parent.stop();
       expect(start.calledOnce).to.be.true;
@@ -517,7 +546,7 @@ describe('ProcessManager', function () {
       // Give the parent a stoppable of its own first, so its lazily
       // registered signal listener is already in place before the baseline
       // is captured below.
-      parent.add({ stop: sinon.stub().resolves() });
+      parent.add(emitting({ stop: sinon.stub().resolves() }));
       const sigtermBefore = process.listenerCount('SIGTERM');
       const sigintBefore = process.listenerCount('SIGINT');
       manager = new ProcessManager({ name: 'child', processManager: parent });
