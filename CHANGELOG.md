@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0](https://github.com/sektek/utility-belt/compare/v0.3.10...v0.4.0) (2026-11-23)
+
+### ⚠ BREAKING CHANGES
+
+* **utility-belt:** require lifecycle events on Startable and Stoppable (#62)
+
+### Features
+
+* **utility-belt:** add lifecycle event types ([#58](https://github.com/sektek/utility-belt/issues/58)) ([15c7edd](https://github.com/sektek/utility-belt/commit/15c7edd519bf0c17ff2e7380fb99ec8388bcaa4a))
+* **utility-belt:** add stopOnError option to ProcessManager start ([#64](https://github.com/sektek/utility-belt/issues/64)) ([e2da1b1](https://github.com/sektek/utility-belt/commit/e2da1b12d0d0dbe49d1215f9b91e3e88ae55a191))
+* **utility-belt:** emit lifecycle events from AbstractService ([#59](https://github.com/sektek/utility-belt/issues/59)) ([e370efd](https://github.com/sektek/utility-belt/commit/e370efd0c4211ba5b12e45f28c3b5d1ca41c8a1f))
+* **utility-belt:** emit lifecycle events from ProcessManager ([#61](https://github.com/sektek/utility-belt/issues/61)) ([f051536](https://github.com/sektek/utility-belt/commit/f051536c15c4bbccd5925a2e2c9e641721c8735c))
+* **utility-belt:** emit lifecycle events from Queue ([#60](https://github.com/sektek/utility-belt/issues/60)) ([16851e5](https://github.com/sektek/utility-belt/commit/16851e5119281877e18e79085f414ced37496d4e))
+* **utility-belt:** extract StartableOptions and StoppableOptions ([#57](https://github.com/sektek/utility-belt/issues/57)) ([5ea2199](https://github.com/sektek/utility-belt/commit/5ea21996da6a1eef1256764bfec9e05c7265a149))
+* **utility-belt:** require lifecycle events on Startable and Stoppable ([#62](https://github.com/sektek/utility-belt/issues/62)) ([5c1bef2](https://github.com/sektek/utility-belt/commit/5c1bef2a40aa3d145da8facd2d05f72e2a396824))
+
+### Bug Fixes
+
+* **utility-belt:** make ProcessManager start and stop idempotent ([#63](https://github.com/sektek/utility-belt/issues/63)) ([6520e41](https://github.com/sektek/utility-belt/commit/6520e41b1ede52cd60cb7025a68beaa31892853f))
+
 ## [0.3.10](https://github.com/sektek/utility-belt/compare/v0.3.9...v0.3.10) (2026-11-03)
 
 ### Features
