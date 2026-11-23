@@ -1,44 +1,29 @@
-import { AbstractComponent, ComponentOptions } from './abstract-component.js';
 import {
   ExecutionStrategyComponent,
   ExecutionStrategyFn,
   Startable,
+  StartableOptions,
   Stoppable,
+  StoppableOptions,
 } from './types/index.js';
+import { AbstractComponent } from './abstract-component.js';
+import { ServiceOptions } from './abstract-service.js';
 import { getComponent } from './get-component.js';
 import { isNamed } from './guards/is-named.js';
 import { isStartable } from './guards/is-startable.js';
 import { isStoppable } from './guards/is-stoppable.js';
 import { serialExecutionStrategy } from './execution-strategies/index.js';
 
-export type ProcessManagerOptions = ComponentOptions & {
-  /**
-   * The execution strategy to use when starting and stopping services.
-   * Accepts either an `ExecutionStrategy` object or a plain function.
-   * Defaults to serial execution.
-   */
-  executionStrategy?: ExecutionStrategyComponent;
-  /**
-   * Maximum time in milliseconds each individual service is allowed to take
-   * to complete its `start()` call. Rejects with an error if any single
-   * service exceeds this deadline.
-   * Defaults to `Infinity` (no timeout).
-   */
-  maxStartWaitMs?: number;
-  /**
-   * Maximum time in milliseconds each individual service is allowed to take
-   * to complete its `stop()` call. Rejects with an error if any single
-   * service exceeds this deadline.
-   * Defaults to `Infinity` (no timeout).
-   */
-  maxStopWaitMs?: number;
-  /**
-   * An optional `ProcessManager` to register this instance with.
-   * When provided, this manager's `start` and `stop` are delegated to it,
-   * and this instance never registers its own SIGTERM/SIGINT listeners.
-   */
-  processManager?: ProcessManager;
-};
+export type ProcessManagerOptions = ServiceOptions &
+  StartableOptions &
+  StoppableOptions & {
+    /**
+     * The execution strategy to use when starting and stopping services.
+     * Accepts either an `ExecutionStrategy` object or a plain function.
+     * Defaults to serial execution.
+     */
+    executionStrategy?: ExecutionStrategyComponent;
+  };
 
 /**
  * Manages the lifecycle of a collection of `Startable` and `Stoppable` services,
