@@ -1,4 +1,13 @@
-import { Collector } from './types/index.js';
+import { EventEmitter } from 'eventemitter3';
+
+import {
+  Collector,
+  EventEmittingService,
+  SERVICE_STARTED,
+  SERVICE_STOPPED,
+  SERVICE_STOP_ERROR,
+  ServiceEvents,
+} from './types/index.js';
 
 export type QueueOptions = {
   /**
@@ -39,7 +48,20 @@ export type QueueOptions = {
 
 type Node<T> = { value: T; next: Node<T> | null };
 
-export class Queue<T> implements Collector<T>, AsyncIterable<T> {
+/**
+ * An async queue that implements {@link Collector} and `AsyncIterable`.
+ *
+ * Emits the lifecycle events in {@link ServiceEvents}: `service:started`
+ * after `start()`, `service:stopped` once `stop()` has drained the queue, and
+ * `service:stopError` with the original error when `stop()` times out.
+ * `start()` cannot fail, so `service:startError` is never emitted.
+ *
+ * @template T - The type of items held by the queue.
+ */
+export class Queue<T>
+  extends EventEmitter
+  implements Collector<T>, AsyncIterable<T>, EventEmittingService<ServiceEvents>
+{
   #head: Node<T> | null = null;
   #tail: Node<T> | null = null;
   #size: number = 0;
@@ -54,6 +76,8 @@ export class Queue<T> implements Collector<T>, AsyncIterable<T> {
   #stopOnEmpty: boolean = false;
 
   constructor(opts: QueueOptions = {}) {
+    super();
+
     if (opts.maxSize !== undefined && opts.maxSize <= 0) {
       throw new Error('maxSize must be greater than 0');
     }
@@ -119,6 +143,7 @@ export class Queue<T> implements Collector<T>, AsyncIterable<T> {
 
   start() {
     this.#running = true;
+    this.emit(SERVICE_STARTED);
   }
 
   /**
@@ -134,12 +159,15 @@ export class Queue<T> implements Collector<T>, AsyncIterable<T> {
     const startTime = Date.now();
     while (this.#size > 0) {
       if (Date.now() - startTime >= this.#maxWaitStop) {
-        throw new Error('Queue stop timeout exceeded');
+        const error = new Error('Queue stop timeout exceeded');
+        this.emit(SERVICE_STOP_ERROR, error);
+        throw error;
       }
       await new Promise(resolve =>
         setTimeout(resolve, this.#sleepDurationStop),
       );
     }
+    this.emit(SERVICE_STOPPED);
   }
 
   async *[Symbol.asyncIterator]() {
