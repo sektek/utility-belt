@@ -116,7 +116,7 @@ Utility Belt favors explicit contracts and small independently useful pieces. Co
 
 ## More capabilities
 
-- [ProcessManager and service lifecycle](docs/reference.md#abstractservice-and-processmanager): coordinate startup and shutdown; understand which manager owns process signal handlers.
+- [ProcessManager and service lifecycle](docs/reference.md#abstractservice-and-processmanager): coordinate startup and shutdown, observe lifecycle events (`service:started`, `service:stopped` and their error counterparts), and understand which manager owns process signal handlers. If you implement `Startable` or `Stoppable`, read the [migration notes](docs/reference.md#migrating-startable-and-stoppable-implementers).
 - [HTTP](docs/reference.md#http): work with the platform `fetch` API and typed provider wrappers.
 - [Logging](docs/reference.md#logging): inject a `LoggerProvider` so components can obtain context-specific loggers.
 - [Queue and iteration](docs/reference.md#queue): use an asynchronous FIFO queue with explicit consumer and shutdown behavior.

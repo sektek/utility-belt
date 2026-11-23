@@ -47,8 +47,9 @@ Core interfaces — no implementations, just contracts:
 | `Processor<I, O>` | `process(input): Promise<O>` |
 | `Logger` | Structured logging: `debug/info/warn/error` + context |
 | `LoggerProvider<T>` | `SyncProvider<Logger>` with `with(ctx)` |
-| `Service` | `Startable + Stoppable` |
-| `EventEmittingService<T>` | Typed `EventEmitter` interface |
+| `Startable` / `Stoppable` / `Service` | `start()` / `stop()` / both; each extends `EventEmittingService` (`on` + `emit`) and emits lifecycle events (`service:started`/`service:stopped`/`service:startError`/`service:stopError`, error listeners receive the error) |
+| `StartableOptions` / `StoppableOptions` | `maxStartWaitMs` / `maxStopWaitMs` |
+| `EventEmittingService<T>` | Typed `EventEmitter` interface (`on`, `emit`); required by `isStartable`/`isStoppable` |
 | `Component<T, K>` | Utility type extracting a method signature |
 
 ### Provider implementations
@@ -132,7 +133,7 @@ new RedisStore({ valueSerializer: (v) => JSON.stringify(v) }); // plain function
 
 **`ArrayCollection<T>`** — Simple `Collection<T>` backed by an array: `add`, `clear`, `values()`.
 
-**`Queue<T>`** — Async queue implementing `Collector` and `AsyncIterable`. Options: `maxSize`, `maxWaitAdd`, `maxWaitStop`, `sleepDuration`, `stopOnEmpty`. Internally uses a linked list. Prevents concurrent iteration.
+**`Queue<T>`** — Async queue implementing `Collector` and `AsyncIterable`; emits `service:started`, `service:stopped`, `service:stopError`. Options: `maxSize`, `maxWaitAdd`, `maxWaitStop`, `sleepDuration`, `stopOnEmpty`. Internally uses a linked list. Prevents concurrent iteration.
 
 **`ObjectBuilder<T>`** — Fluent builder: static defaults + dynamic provider functions. Key methods: `from(obj)` copy-from, `with(defaults)` merge-defaults, `create(input?)` build, `.creator` bound accessor. Uses lodash deep merge/clone.
 
