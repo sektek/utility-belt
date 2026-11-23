@@ -1,4 +1,10 @@
-import { Service } from './types/service.js';
+import {
+  EventEmittingService,
+  SERVICE_STARTED,
+  SERVICE_STOPPED,
+  Service,
+  ServiceEvents,
+} from './types/index.js';
 
 import { AbstractComponent, ComponentOptions } from './abstract-component.js';
 import { ProcessManager } from './process-manager.js';
@@ -33,12 +39,19 @@ export type ServiceOptions = ComponentOptions & {
  *   created (inheriting this service's `loggerProvider`) and the service
  *   registers with it. That manager installs SIGTERM/SIGINT listeners.
  *
- * `start()` and `stop()` are no-ops by default; subclasses override them to
- * implement their own startup and shutdown logic.
+ * The service emits the lifecycle events in {@link ServiceEvents}. The
+ * default `start()` and `stop()` are no-ops that emit `service:started` and
+ * `service:stopped`; they cannot fail, so they never emit
+ * `service:startError` or `service:stopError`.
+ *
+ * A subclass that overrides `start()` or `stop()` replaces the default and
+ * must emit the events itself: `service:started`/`service:stopped` on
+ * success, and `service:startError`/`service:stopError` with the original
+ * error on failure, rethrowing the error unchanged.
  */
 export abstract class AbstractService
   extends AbstractComponent
-  implements Service
+  implements Service, EventEmittingService<ServiceEvents>
 {
   constructor(opts: ServiceOptions = {}) {
     super(opts);
@@ -53,9 +66,19 @@ export abstract class AbstractService
     }
   }
 
-  /** No-op start implementation. Subclasses override this to perform startup logic. */
-  async start() {}
+  /**
+   * No-op start implementation that emits `service:started`. Subclasses override this
+   * to perform startup logic and must emit the lifecycle events themselves.
+   */
+  async start() {
+    this.emit(SERVICE_STARTED);
+  }
 
-  /** No-op stop implementation. Subclasses override this to perform shutdown logic. */
-  async stop() {}
+  /**
+   * No-op stop implementation that emits `service:stopped`. Subclasses override this
+   * to perform shutdown logic and must emit the lifecycle events themselves.
+   */
+  async stop() {
+    this.emit(SERVICE_STOPPED);
+  }
 }
