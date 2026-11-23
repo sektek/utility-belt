@@ -35,6 +35,15 @@ export type ProcessManagerOptions = ServiceOptions &
      * Defaults to serial execution.
      */
     executionStrategy?: ExecutionStrategyComponent;
+    /**
+     * When `true` and a service fails to start, the services that had already
+     * started successfully are stopped (using the same execution strategy and
+     * stop timeout as a regular stop) before the start failure is rethrown.
+     * Services whose `start()` rejected or never ran are not stopped. A failure
+     * while stopping is reported but never replaces the original start failure.
+     * Defaults to `false` (already started services are left running).
+     */
+    stopOnError?: boolean;
   };
 
 /**
@@ -97,6 +106,7 @@ export class ProcessManager
   #executionStrategy: ExecutionStrategyFn;
   #maxStartWaitMs: number;
   #maxStopWaitMs: number;
+  #stopOnError: boolean;
   #startables: Set<Startable> = new Set();
   #stoppables: Set<Stoppable> = new Set();
   #signalListener: (() => void) | undefined;
@@ -115,6 +125,7 @@ export class ProcessManager
     );
     this.#maxStartWaitMs = opts.maxStartWaitMs ?? Infinity;
     this.#maxStopWaitMs = opts.maxStopWaitMs ?? Infinity;
+    this.#stopOnError = opts.stopOnError ?? false;
     if (opts.processManager) {
       opts.processManager.add(this);
       this.#managesOwnSignals = false;
@@ -191,6 +202,13 @@ export class ProcessManager
    * Starts all registered `Startable` services using the configured execution strategy.
    * If `maxStartWaitMs` is set, each individual service must complete within that limit.
    *
+   * If `stopOnError` is enabled and a service fails to start, the services whose
+   * `start()` had resolved are stopped first (with the same execution strategy and
+   * `maxStopWaitMs` as `stop()`, emitting `service:stopped` or `service:stopError`), then `service:startError`
+   * is emitted and the original start failure is rethrown. A failure while rolling
+   * back never replaces it, and the manager is not marked as started.
+   * With the parallel strategy every in-flight start settles before the rollback.
+   *
    * The call is idempotent. Concurrent calls share the single in-flight run, so
    * every caller sees the same outcome (resolution or the same rejection). A call
    * after a successful start resolves immediately without starting the services
@@ -227,6 +245,7 @@ export class ProcessManager
 
   async #runStart(): Promise<void> {
     const logger = this.logger();
+    const started: Startable[] = [];
     logger.info('starting services', { count: this.#startables.size });
     try {
       await this.#executionStrategy(
@@ -238,6 +257,7 @@ export class ProcessManager
                 const startTime = Date.now();
                 logger.info('starting service', { service: serviceName });
                 await s.start();
+                started.push(s);
                 const duration = Date.now() - startTime;
                 logger.info('service started', {
                   service: serviceName,
@@ -251,6 +271,10 @@ export class ProcessManager
         ),
       );
     } catch (error) {
+      if (this.#stopOnError) {
+        await this.#rollBack(started);
+      }
+
       this.emit(SERVICE_START_ERROR, toError(error));
       throw error;
     }
@@ -301,12 +325,38 @@ export class ProcessManager
   }
 
   async #runStop(): Promise<void> {
-    const logger = this.logger();
-    logger.info('stopping services', { count: this.#stoppables.size });
     this.#unregisterSignalListener();
+    await this.#stopServices(this.#stoppables);
+    this.#stopped = true;
+    this.#started = false;
+  }
+
+  async #rollBack(started: Startable[]): Promise<void> {
+    const stoppables: Stoppable[] = [];
+    for (const service of started) {
+      if (isStoppable(service)) {
+        stoppables.push(service);
+      }
+    }
+
+    if (stoppables.length === 0) {
+      return;
+    }
+
+    try {
+      await this.#stopServices(stoppables);
+    } catch (error) {
+      this.logger().error('stopping started services failed', { error });
+    }
+  }
+
+  async #stopServices(services: Iterable<Stoppable>): Promise<void> {
+    const logger = this.logger();
+    const stoppables = [...services];
+    logger.info('stopping services', { count: stoppables.length });
     try {
       await this.#executionStrategy(
-        [...this.#stoppables].map(
+        stoppables.map(
           s => () =>
             this.#withTimeout(
               async () => {
@@ -331,8 +381,6 @@ export class ProcessManager
       throw error;
     }
 
-    this.#stopped = true;
-    this.#started = false;
     this.emit(SERVICE_STOPPED);
   }
 
