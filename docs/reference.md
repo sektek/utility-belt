@@ -659,6 +659,7 @@ await jobs.create({ options: { retries: 0 } });
 | `isFunction(value)`                         | Type guard for functions                                                                              |
 | `isPrimitive(value)`                        | `true` if `value` is not an object (or function)                                                      |
 | `isError(value)`                            | Type guard for `Error` instances                                                                      |
+| `toError(thrown)`                           | Returns `thrown` if it is an `Error`, otherwise an `Error` wrapping it as `cause`                     |
 | `isNamed(value)`                            | Type guard for objects with a string `name`                                                           |
 | `isStartable(value)` / `isStoppable(value)` | Type guards for objects with `start` / `stop` and `on` / `emit` methods                                              |
 | `InvalidComponentError`                     | Thrown by `getComponent`; exposes the offending `component`                                           |

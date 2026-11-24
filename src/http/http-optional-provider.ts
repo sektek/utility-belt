@@ -1,5 +1,6 @@
 import { OptionalProvider } from '../types/optional-provider.js';
 import { getComponent } from '../get-component.js';
+import { toError } from '../errors/to-error.js';
 
 import { HttpOperator } from './http-operator.js';
 import { HttpProviderOptions } from './http-provider.js';
@@ -46,8 +47,7 @@ export class HttpOptionalProvider<R, T = void> implements OptionalProvider<
     try {
       return await this.#responseDeserializer(response);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = toError(error).message;
       throw new Error(`Failed to deserialize resource: ${errorMessage}`, {
         cause: error,
       });
