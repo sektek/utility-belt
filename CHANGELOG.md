@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.1](https://github.com/sektek/utility-belt/compare/v0.4.0...v0.4.1) (2026-11-24)
+
+### Features
+
+* **utility-belt:** add toError helper ([#67](https://github.com/sektek/utility-belt/issues/67)) ([f494e0d](https://github.com/sektek/utility-belt/commit/f494e0dc304b41a8a8b3db64fc7aa3a295ba7da2))
+
 ## [0.4.0](https://github.com/sektek/utility-belt/compare/v0.3.10...v0.4.0) (2026-11-23)
 
 ### ⚠ BREAKING CHANGES
