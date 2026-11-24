@@ -19,6 +19,7 @@ import { isNamed } from './guards/is-named.js';
 import { isStartable } from './guards/is-startable.js';
 import { isStoppable } from './guards/is-stoppable.js';
 import { serialExecutionStrategy } from './execution-strategies/index.js';
+import { toError } from './errors/to-error.js';
 
 /**
  * Lifecycle events emitted by a {@link ProcessManager}; the same as
@@ -45,22 +46,6 @@ export type ProcessManagerOptions = ServiceOptions &
      */
     stopOnError?: boolean;
   };
-
-/**
- * Returns `thrown` if it is an `Error`, otherwise an `Error` that wraps it as
- * its `cause`. Anything can be thrown or used to reject a promise, but the
- * error events promise their listeners an `Error`.
- *
- * @param thrown - The value a service threw or rejected with.
- * @returns `thrown` itself when it is an `Error`, otherwise a wrapping `Error`.
- */
-function toError(thrown: unknown): Error {
-  if (thrown instanceof Error) {
-    return thrown;
-  }
-
-  return new Error(String(thrown), { cause: thrown });
-}
 
 /**
  * Manages the lifecycle of a collection of `Startable` and `Stoppable` services,

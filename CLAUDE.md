@@ -125,6 +125,7 @@ new RedisStore({ valueSerializer: (v) => JSON.stringify(v) }); // plain function
 | `isFunction(value)` | Type guard for functions |
 | `isPrimitive(value)` | True if value is not an Object |
 | `noOp()` | Empty void function |
+| `toError(thrown)` | Returns `thrown` if it is an `Error`, otherwise `new Error(String(thrown), { cause: thrown })` |
 | `take(source, limit, offset?)` | Async generator: takes N items from any iterable |
 | `NullLogger` | No-op `Logger` implementation |
 | `NullLoggerProvider` | Singleton provider always returning `NullLogger` |

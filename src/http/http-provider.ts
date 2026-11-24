@@ -1,4 +1,5 @@
 import { getComponent } from '../get-component.js';
+import { toError } from '../errors/to-error.js';
 
 import {
   ResponseDeserializerComponent,
@@ -45,8 +46,7 @@ export class HttpProvider<R, T = void> {
       const response = await this.#httpOperator.perform(arg);
       return await this.#responseDeserializer(response);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = toError(error).message;
       throw new Error(`Unable to obtain resource: ${errorMessage}`, {
         cause: error,
       });
