@@ -20,3 +20,12 @@ export class UndefinedProvider<
     return undefined;
   }
 }
+
+/**
+ * A shared function that returns `undefined`, for optional provider slots that
+ * take a plain function. Assignable to an `OptionalProviderFn` of any value
+ * and context type. See {@link UndefinedProvider} for the class form.
+ *
+ * @returns `undefined`.
+ */
+export const nothing = (): undefined => undefined;
