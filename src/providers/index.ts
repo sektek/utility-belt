@@ -1,5 +1,6 @@
 export * from './chained-optional-provider.js';
 export * from './chained-provider.js';
+export * from './conditional-provider.js';
 export * from './delegating-optional-provider.js';
 export * from './delegating-provider.js';
 export * from './env-var-boolean-provider.js';
