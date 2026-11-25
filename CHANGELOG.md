@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.2](https://github.com/sektek/utility-belt/compare/v0.4.1...v0.4.2) (2026-11-25)
+
+### Features
+
+* **utility-belt:** add UndefinedProvider ([#71](https://github.com/sektek/utility-belt/issues/71)) ([9f2a3c9](https://github.com/sektek/utility-belt/commit/9f2a3c93c3688d8672cc2e30348ee83b30fd7bba))
+
 ## [0.4.1](https://github.com/sektek/utility-belt/compare/v0.4.0...v0.4.1) (2026-11-24)
 
 ### Features
