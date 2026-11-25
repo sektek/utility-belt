@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.4](https://github.com/sektek/utility-belt/compare/v0.4.3...v0.4.4) (2026-11-25)
+
+### Features
+
+* **utility-belt:** add nothing OptionalProviderFn ([#72](https://github.com/sektek/utility-belt/issues/72)) ([3a7ce2d](https://github.com/sektek/utility-belt/commit/3a7ce2d65732d441a3d4a135bfa239b73ff36f92))
+
 ## [0.4.3](https://github.com/sektek/utility-belt/compare/v0.4.2...v0.4.3) (2026-11-25)
 
 ### Features
